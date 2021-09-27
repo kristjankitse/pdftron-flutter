@@ -351,7 +351,7 @@ static const PTAnnotationToolbarKey PTAnnotationToolbarKeyItems = @"items";
 
 typedef enum {
     exportAnnotationId = 0,
-    willHideEditMenuId
+    willHideEditMenuId,
     exportBookmarkId,
     documentLoadedId,
     documentErrorId,
@@ -383,15 +383,12 @@ typedef enum {
 -(void)documentController:(PTDocumentController*)documentController annotationsSelected:(NSString*)annotations;
 -(void)documentController:(PTDocumentController*)documentController formFieldValueChanged:(NSString*)fieldString;
 -(void)documentController:(PTDocumentController*)docVC behaviorActivated:(NSString*)behaviorString;
--(void)documentController:(PTDocumentController *)docVC leadingNavButtonClicked:(nullable NSString *)nav;
 -(void)documentController:(PTDocumentController*)docVC longPressMenuPressed:(NSString*)longPressMenuPressedString;
 -(void)documentController:(PTDocumentController *)docVC annotationMenuPressed:(NSString*)annotationMenuPressedString;
 -(void)documentController:(PTDocumentController *)docVC leadingNavButtonClicked:(nullable NSString *)nav;
 -(void)documentController:(PTDocumentController *)docVC pageChanged:(NSString*)pageNumbersString;
 -(void)documentController:(PTDocumentController *)docVC zoomChanged:(NSNumber*)zoom;
 -(void)documentController:(PTDocumentController *)docVC pageMoved:(NSString*)pageNumbersString;
-
-- (void)topLeftButtonPressed:(UIBarButtonItem *)barButtonItem;
 
 - (void)topLeftButtonPressed:(UIBarButtonItem *)barButtonItem;
 

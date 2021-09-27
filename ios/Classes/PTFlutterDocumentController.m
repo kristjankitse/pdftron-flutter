@@ -244,20 +244,6 @@ static BOOL PT_addMethod(Class cls, SEL selector, void (^block)(id))
 
 #pragma mark - <PTToolManagerDelegate>
 
-// PTToolManagerDelegate method implementation.
--(BOOL)toolManager:(PTToolManager *)toolManager shouldShowMenu:(UIMenuController *)menuController forAnnotation:(PTAnnot *)annotation onPageNumber:(unsigned long)pageNumber {
-    // Remove flatten button from menu
-    menuController.menuItems = [self removeAnnotationItems:menuController.menuItems];
-    // NSLog([annotation GetCustomData:@"taskId"]);
-
-    // Remove all buttons from BauhubTask
-    if (annotation.GetType == 12) {
-        menuController.menuItems = [self removeAnnotationItemsFromBauhubTask:menuController.menuItems];
-    }
-    
-    return YES;
-}
-
 - (NSArray<UIMenuItem *> *)removeAnnotationItems:(NSArray<UIMenuItem *> *)items {
     NSArray<NSString *> *stringsToRemove = @[
         PTLocalizedString(@"Flatten", nil),
@@ -419,6 +405,15 @@ static BOOL PT_addMethod(Class cls, SEL selector, void (^block)(id))
         showMenu = [self filterMenuItemsForAnnotationSelectionMenu:menuController forAnnotation:annotation];
     } else {
         showMenu = [self filterMenuItemsForLongPressMenu:menuController];
+    }
+
+    // Remove flatten button from menu
+    menuController.menuItems = [self removeAnnotationItems:menuController.menuItems];
+    // NSLog([annotation GetCustomData:@"taskId"]);
+
+    // Remove all buttons from BauhubTask
+    if (annotation.GetType == 12) {
+        menuController.menuItems = [self removeAnnotationItemsFromBauhubTask:menuController.menuItems];
     }
 
     return showMenu;

@@ -2383,7 +2383,7 @@
         // TODO
     } else if ([toolMode isEqualToString:PTPencilKitDrawingToolKey]) {
         toolClass = [PTPencilDrawingCreate class];
-    } else if {
+    } else {
         toolClass = [PTPanTool class];
     }
 
