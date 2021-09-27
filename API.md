@@ -6,7 +6,7 @@
 - [Viewer Configurations](#Viewer-Configurations)
 
 ## Utility Functions
-This section is for some static methods for global library initialization, configuration, and utility. They could only be callable as a plugin. Below is an example for [initialize](#initialize):
+This section is for some static methods for global library initialization, configuration, and utility. They could only be callable as a plugin. Below is an example for [`initialize`](#initialize):
 
 ```dart
 PdftronFlutter.initialize('your_license_key');
@@ -31,7 +31,7 @@ print('App is currently running on: ' + platformVersion);
 
 ### initialize
 
-Initializes PDFTron SDK with your PDFTron commercial license key. You can run PDFTron in demo mode by passing an empty string.
+Initializes PDFTron SDK with your PDFTron commercial license key. You can run PDFTron in demo mode by not passing in a string, or by passing an empty string.
 
 Parameters:
 
@@ -41,13 +41,36 @@ key | String | true | your PDFTron license key
 
 Returns a Future.
 
+Demo mode: 
 ```dart
-PdftronFlutter.initialize('your_licensey_key');
+PdftronFlutter.initialize();
 ```
 
+Using commercial license key:
+```dart
+PdftronFlutter.initialize('your_license_key');
+```
+
+### setRequestedOrientation
+
+Changes the orientation of this activity. Android only. 
+
+For more information on the native API, see the [Android API reference](https://developer.android.com/reference/android/app/Activity#setRequestedOrientation(int)).
+
+Parameters:
+
+Name | Type | Required | Description
+--- | --- | --- | ---
+requestedOrientation | int | true | A [PTOrientation](./lib/constants.dart) constant.
+
+Returns a Future.
+
+```dart
+PdftronFlutter.setRequestedOrientation(0);
+```
 
 ## Viewer Functions
-This section is for viewer related non-static methods. They would be callable in both plugin and widger versions. For example, [openDocument](#openDocument) is accessible in 2 ways:
+This section is for viewer related non-static methods. They would be callable in both plugin and widget versions. For example, [`openDocument`](#openDocument) is accessible in 2 ways:
 
 Plugin:
 ```dart
@@ -65,7 +88,7 @@ void _onDocumentViewCreated(DocumentViewController controller) {
 
 We suggest that you stick with either version for the APIs that are callable in both versions, to avoid unnecessary problems.
 
-There are several custom classes used in these APIs: `Annot`, `AnnotWithRect`, `Field`, `Rect`, `AnnotFlag`,`AnnotWithFlag` and `CustomToolbar`. These classes are listed [here](./lib/options.dart), and the constants that are used in the examples below are all listed [here](./lib/constants.dart).
+There are several custom classes used in these APIs: Annot, AnnotWithRect, Field, Rect, AnnotFlag, AnnotWithFlag and CustomToolbar. These classes are listed [here](./lib/options.dart), and the constants that are used in the examples below are all listed [here](./lib/constants.dart).
 
 ### Document
 
@@ -118,10 +141,70 @@ path | String | the location of the saved document
 var path = await PdftronFlutter.saveDocument();
 ```
 
+#### getDocumentPath
+Returns the path of the current document.
+
+Returns a Future.
+
+Future Parameters:
+
+Name | Type | Description
+--- | ---| ---
+path | String | the document path
+
+```dart
+var path = await PdftronFlutter.getDocumentPath();
+```
+
+#### openAnnotationList
+Displays the annotation tab of the existing list container. If this tab has been disabled, the method does nothing.
+
+Returns a Future that resolves when the view has loaded.
+
+```dart
+await PdftronFlutter.openAnnotationList();
+```
+
+#### openBookmarkList
+Displays the bookmark tab of the existing list container. If this tab has been disabled, the method does nothing.
+
+Returns a Future that resolves when the view has loaded.
+
+```dart
+await PdftronFlutter.openBookmarkList();
+```
+
+#### openOutlineList
+Displays the outline tab of the existing list container. If this tab has been disabled, the method does nothing.
+
+Returns a Future that resolves when the view has loaded.
+
+```dart
+await PdftronFlutter.openOutlineList();
+```
+
+#### openLayersList
+On Android it displays the layers dialog while on iOS it displays the layers tab of the existing list container. If this tab has been disabled or there are no layers in the document, the method does nothing.
+
+Returns a Future that resolves when the view has loaded.
+
+```dart
+await PdftronFlutter.openLayersList();
+```
+
+#### openNavigationLists
+Displays the existing list container. Its current tab will be the one last opened. 
+
+Returns a Future that resolves when the view has loaded.
+
+```dart
+await PdftronFlutter.openNavigationLists();
+```
+
 ### Viewer UI Configuration
 
 #### setLeadingNavButtonIcon
-Sets the file name of the icon to be used for the leading navigation button. The button will use the specified icon if [showLeadingNavButton](#showLeadingNavButton) (which by default is true) is true in the config.
+Sets the file name of the icon to be used for the leading navigation button. The button will use the specified icon if [`showLeadingNavButton`](#showLeadingNavButton) (which by default is true) is true in the config.
 
 Parameters:
 
@@ -138,21 +221,21 @@ PdftronFlutter.setLeadingNavButtonIcon(Platform.isIOS ? 'ic_close_black_24px.png
 **Note**: to add the image file to your application, please follow the steps below:
 
 ##### Android
-1. Add the image resource to the [example/android/app/src/main/res/drawable](./example/android/app/src/main/res/drawable) directory. For details about supported file types and potential compression, check out [here](https://developer.android.com/guide/topics/graphics/drawables#drawables-from-images).
+1. Add the image resource to the [`example/android/app/src/main/res/drawable`](./example/android/app/src/main/res/drawable) directory. For details about supported file types and potential compression, check out [here](https://developer.android.com/guide/topics/graphics/drawables#drawables-from-images).
 
-<img alt='demo-android' src='android_add_resources.png'/>
+<img alt='demo-android' src='https://pdftron.s3.amazonaws.com/custom/websitefiles/flutter/android_add_resources.png'/>
 
 2. Now you can use the image in the viewer. For example, if you add `button_close.png` to drawable, you could use `'button_close'` in leadingNavButtonIcon.
 
 ##### iOS
-1. After pods has been installed, open the .xcworkspace file for this application in Xcode (in this case, it's [Runner.xcworkspace](./example/ios/Runner.xcworkspace)), and navigate through the list below. This would allow you to add resources, in this case, an image, to your project.
+1. After pods has been installed, open the .xcworkspace file for this application in Xcode (in this case, it's [`Runner.xcworkspace`](./example/ios/Runner.xcworkspace)), and navigate through the list below. This would allow you to add resources, in this case, an image, to your project.
 - "Project navigator"
 - "Runner" (or the app name)
 - "Build Phases"
 - "Copy Bundle Resources"
 - "+".
 
-<img alt='demo-ios' src='ios_add_resources.png'/>
+<img alt='demo-ios' src='https://pdftron.s3.amazonaws.com/custom/websitefiles/flutter/ios_add_resources.png'/>
 
 2. Now you can use the image in the viewer. For example, if you add `button_open.png` to the bundle, you could use `'button_open.png'` in leadingNavButtonIcon.
 
@@ -165,7 +248,7 @@ Parameters:
 
 Name | Type | Description
 --- | --- | ---
-toolMode | String | One of [Tools](./lib/constants.dart) string constants, representing to tool mode to set
+toolMode | String | One of [`Tools`](./lib/constants.dart) string constants, representing to tool mode to set
 
 Returns a Future.
 
@@ -190,6 +273,29 @@ print("Tool committed: $committed");
 ```
 
 ### Page
+
+#### setCurrentPage
+
+Sets current page of the document. Page numbers are 1-indexed.
+
+Parameters:
+
+Name | Type | Description
+--- | --- | ---
+pageNumber | int | the page number to be set as the current page; 1-indexed
+
+Returns a Future.
+
+Future Parameters:
+
+Name | Type | Description
+-- | -- | --
+success | bool | whether the setting process is successful.
+
+```dart
+var setResult = await controller.setCurrentPage(5);
+print('Page set ' + setResult ? 'successfully' : 'unsuccessfully');
+```
 
 #### getPageCount
 Gets the total number of pages in the currently displayed document.
@@ -229,6 +335,100 @@ var cropBox = await PdftronFlutter.getPageCropBox(1);
 print('The width of crop box for page 1 is: ' + cropBox.width.toString());
 ```
 
+#### getPageRotation
+Gets the rotation value of the specified page in the current document.
+
+Parameters:
+
+Name | Type | Description
+--- | --- | ---
+pageNumber | int | the page number for the target page. It is 1-indexed
+
+Returns a Future.
+
+Future Parameters:
+
+Name | Type | Description
+--- | --- | ---
+pageRotation | int | the rotation degree of the page, one of 0, 90, 180 or 270 (clockwise).
+
+```dart
+var pageRotation = await PdftronFlutter.getPageRotation(1);
+print("The rotation value of page 1 is $pageRotation");
+```
+
+#### gotoPreviousPage
+Go to the previous page of the document. If on first page, it will stay on first page.
+
+Returns a Future.
+
+Future Parameters:
+
+Name | Type | Description
+--- | --- | ---
+pageChanged | bool | whether the setting process was successful (no change due to staying in first page counts as being successful)
+
+```dart
+var pageChanged = await PdftronFlutter.gotoPreviousPage();
+if (pageChanged) {
+  print("Successfully went to previous page");
+}
+```
+
+#### gotoNextPage
+Go to the next page of the document. If on last page, it will stay on last page.
+
+Returns a Future.
+
+Future Parameters:
+
+Name | Type | Description
+--- | --- | ---
+pageChanged | bool | whether the setting process was successful (no change due to staying in last page counts as being successful)
+
+```dart
+var pageChanged = await PdftronFlutter.gotoNextPage();
+if (pageChanged) {
+  print("Successfully went to next page");
+}
+```
+
+#### gotoFirstPage
+Go to the first page of the document.
+
+Returns a Future.
+
+Future Parameters:
+
+Name | Type | Description
+--- | --- | ---
+pageChanged | bool | whether the setting process was successful
+
+```js
+var pageChanged = await PdftronFlutter.gotoFirstPage();
+if (pageChanged) {
+  print("Successfully went to first page");
+}
+```
+
+#### gotoLastPage
+Go to the last page of the document.
+
+Returns a Future.
+
+Future Parameters:
+
+Name | Type | Description
+--- | --- | ---
+success | bool | whether the setting process was successful
+
+```js
+var pageChanged = await PdftronFlutter.gotoLastPage();
+if (pageChanged) {
+  print("Successfully went to last page");
+}
+```
+
 ### Import/Export Annotations
 
 #### importAnnotationCommand
@@ -266,7 +466,7 @@ PdftronFlutter.importAnnotations(xfdf);
 
 #### exportAnnotations
 
-Extracts XFDF from the current document. If `annotationList` is null, export all annotations from the document; Else export the valid ones specified.
+Extracts XFDF from the current document. If `annotationList` is null, export all annotations from the document; else export the valid ones specified.
 
 Parameters:
 
@@ -330,6 +530,15 @@ list.add(new Annot('World', 2));
 PdftronFlutter.deleteAnnotations(annotList);
 ```
 
+#### deleteAllAnnotations
+Deletes all annotations in the current document exclude links and widgets.
+
+Returns a Future.
+
+```dart
+PdftronFlutter.deleteAllAnnotations();
+```
+
 #### selectAnnotation
 Selects the specified annotation in the current document.
 
@@ -373,6 +582,37 @@ list.add(new AnnotWithFlags('Pdftron', 10, AnnotationFlags.no_zoom, true));
 PdftronFlutter.setFlagsForAnnotations(annotsWithFlags);
 ```
 
+#### setPropertiesForAnnotation
+Sets properties for specified annotation in the current document.
+
+Parameters:
+Name | Type | Description
+--- | --- | ---
+annotation | [`Annot`](./lib/options.dart) | the annotation to be modified
+property | [`AnnotProperty`](./lib/options.dart) | the properties to be set for the target annotation
+
+For settable properties:
+
+Name | Type | Markup exclusive
+--- | --- | ---
+rect | Rect | no
+contents | String | no
+subject | String | yes
+title | String | yes
+contentRect | Rect | yes
+rotation | int | no
+
+```dart
+Annot pdf = new Annot('pdf', 1);
+AnnotProperty property = new AnnotProperty();
+property.rect = new Rect.fromCoordinates(1, 1.5, 100.2, 100);
+property.contents = 'Hello World';
+property.subject = 'sample';
+property.title = 'set-props-for-annot';
+property.rotation = 90;
+PdftronFlutter.setPropertiesForAnnotation(pdf, property);
+```
+
 #### setFlagForFields
 Sets a field flag value on one or more form fields.
 
@@ -397,7 +637,7 @@ Parameters:
 
 Name | Type | Description
 --- | ---| ---
-fields | List of [`Field`](./lib/options.dart) | A list of fields with name and the value that you would like to set to, could be in type number, bool or string
+fields | List of [`Field`](./lib/options.dart) | A list of fields; each field must be set with a name and a value. The value's type can be number, bool or string.
 
 Returns a Future.
 
@@ -447,10 +687,26 @@ Returns a Future.
 PdftronFlutter.importBookmarkJson("{\"0\": \"Page 1\", \"3\": \"Page 4\"}");
 ```
 
+#### addBookmark
+Creates a new bookmark with the given title and page number.
+
+Parameters:
+
+Name | Type | Description
+--- | --- | ---
+title | String | Title of the bookmark
+pageNumber | int | The page number of the new bookmark. It is 1-indexed.
+
+Returns a Future.
+
+```dart
+PdftronFlutter.addBookmark("Page 7", 6);
+```
+
 ### Multi-tab
 
 #### closeAllTabs
-Closes all documents that are currently opened in a multiTab environment (that is, [multiTabEnabled](#multiTabEnabled) is true in the config).
+Closes all documents that are currently opened in a multiTab environment (that is, [`multiTabEnabled`](#multiTabEnabled) is true in the config).
 
 Returns a Future.
 
@@ -504,7 +760,7 @@ var navPressedCancel = startLeadingNavButtonPressedListener(()
 ### Page
 
 #### startPageChangedListener
-Event is raised when page changes.
+Event is raised when the current page changes.
 
 Event Parameters:
 
@@ -517,6 +773,22 @@ pageNumber | int | the current page number
 var pageChangedCancel = startPageChangedListener((previousPageNumber, pageNumber)
 {
   print("flutter page changed. from $previousPageNumber to $pageNumber");
+});
+```
+
+#### startPageMovedListener
+Event is raised when a page has been moved in the document. 
+
+Event Parameters:
+
+Name | Type | Description
+--- | --- | ---
+previousPageNumber | int | the previous page number
+pageNumber | int | the current page number
+
+```dart
+var pageMovedCancel = startPageMovedListener((previousPageNumber, pageNumber) {
+  print("flutter page moved from $previousPageNumber to $pageNumber");
 });
 ```
 
@@ -602,6 +874,75 @@ var fieldChangedCancel = startFormFieldValueChangedListener((fields)
 });
 ```
 
+### View Mode Dialog
+#### hideViewModeItems
+array of [`ViewModePickerItem`](./lib/constants.dart) constants, optional, defaults to none.
+
+Defines view mode items to be hidden in the view mode dialog.
+
+```dart
+config.hideViewModeItems=[ViewModePickerItem.ColorMode, ViewModePickerItem.Crop];
+```
+
+### Annotation Menu
+
+#### startAnnotationMenuPressedListener
+Event is raised on annotation menu pressed if it is passed into [`overrideAnnotationMenuBehavior`](#overrideAnnotationMenuBehavior).
+
+Event Parameters:
+
+Name | Type | Description
+--- | --- | ---
+annotationMenuItem | one of the [`AnnotationMenuItems`](./lib/options.dart) constants | The menu item that has been pressed
+annotations | List of [`Annot`](./lib/options.dart) | The annotations associated with the menu
+
+```dart
+var annotationMenuPressedCancel = startAnnotationMenuPressedListener((annotationMenuItem, annotations) 
+{
+  print("Annotation menu item " + annotationMenuItem + " has been pressed");
+  for (Annot annotation in annotations) {
+    print("Annotation has id: " + annotation.id);
+    print("Annotation is in page: " + annotation.pageNumber.toString());
+  }
+});
+```
+
+### Long Press Menu
+
+#### startLongPressMenuPressedListener
+Event is raised on long press menu pressed if it is passed into [`overrideLongPressMenuBehavior`](#overrideLongPressMenuBehavior).
+
+Event Parameters:
+
+Name | Type | Description
+--- | --- | ---
+longPressMenuItem | one of the [`LongPressMenuItems`](./lib/constants.dart) constants | The menu item that has been pressed
+longPressText | string | The selected text if pressed on text, empty otherwise
+
+```dart
+var longPressMenuPressedCancel = startLongPressMenuPressedListener((longPressMenuItem, longPressText)
+{
+  print("Long press menu item " + longPressMenuItem + " has been pressed");
+  if (longPressText.length > 0) {
+    print("The selected text is: " + longPressText);
+  }
+});
+```
+
+### Custom Behavior
+
+#### startBehaviorActivatedListener
+Event is raised on certain behaviors, if any is passed into [`overrideBehavior`](#overrideBehavior).
+
+action | String, one of the [`Behaviors`](#Behaviors) constants | The behavior which has been activated
+data | map | detailed information regarding the behavior
+
+```dart
+var behaviorActivatedCancel = startBehaviorActivatedListener((action, data) {
+  print('action is ' + action);
+  print('url is ' + data['url']);
+```
+
 ### Bookmarks
 
 #### startExportBookmarkListener
@@ -639,11 +980,11 @@ var zoomChangedCancel = startZoomChangedListener((zoom)
 
 
 ## Viewer Configurations
-This section is the configuration part of the [openDocument](#openDocument) function. You could also refer to [here](./lib/config.dart) for all mutable properties.
+This section is the configuration part of the [`openDocument`](#openDocument) function. You could also refer [here](./lib/config.dart) for all mutable properties.
 
 ### Document
 
-#### customerHeaders
+#### customHeaders
 map<string, string>, defaults to empty.
 
 Defines custom headers to use with HTTP/HTTPS requests.
@@ -655,16 +996,47 @@ config.customHeaders = {'headerName': 'headerValue'};
 #### readOnly
 bool, defaults to false.
 
-Defines whether the viewer is read-only. If true, the UI will not allow the user to change the document.
+Defines whether the viewer is read-only. If true, the UI will not allow the user to edit the document.
 
 ```dart
 config.readOnly = true;
 ```
 
+#### defaultEraserType
+one of the [`DefaultEraserType`](./lib/constants.dart) constants, optional
+
+Sets the default eraser tool type. Value only applied after a clean install.
+
+Eraser Type | Description
+--- | ---
+`annotationEraser` | Erases everything as an object; if you touch ink, the entire object is erased.
+`hybrideEraser` | Erases ink by pixel, but erases other annotation types as objects.
+`inkEraser` | Erases ink by pixel only. Android only.
+
+```dart
+config.defaultEraserType = DefaultEraserType.inkEraser;
+```
+
+#### isBase64String
+bool, defaults to false.
+
+If true, document in [`openDocument`](#openDocument) will be treated as a base64 string.
+
+When viewing a document initialized with a base64 string (i.e. a memory buffer), a temporary file is created on Android, but not on iOS. (If you need access to a file-backed PDF on iOS, save the base64 string to disk, and open the file located at that path.)
+
+```dart
+config.isBase64String = true;
+```
+
+#### base64FileExtension
+String, defaults to `.pdf`, required if using base64 string of a non-pdf file.
+
+Defines the file extension for the base64 string in document, if [`isBase64String`](#isBase64String) is true.
+
 ### UI Customization
 
 #### disabledElements
-array of [Buttons](./lib/constants.dart) constants, defaults to none.
+array of [`Buttons`](./lib/constants.dart) constants, defaults to none.
 
 Defines buttons to be disabled for the viewer.
 
@@ -674,7 +1046,7 @@ config.disabledElements = disabledElements;
 ```
 
 #### disabledTools
-array of [Tools](./lib/constants.dart) constants, defaults to none.
+array of [`Tools`](./lib/constants.dart) constants, defaults to none.
 
 Defines tools to be disabled for the viewer.
 
@@ -708,7 +1080,7 @@ var annotationToolbars = [DefaultToolbars.annotate, customToolbar];
 #### hideDefaultAnnotationToolbars
 array of [`DefaultToolbars`](./lib/constants.dart) constants, defaults to none.
 
-Defines which default annotation toolbars should be hidden. Note that this should be used when [annotationToolbars](#annotationToolbars) is not defined.
+Defines which default annotation toolbars should be hidden. Note that this should be used when [`annotationToolbars`](#annotationToolbars) is not defined.
 
 ```dart
 // Viewer will use all the default toolbars except annotate or draw in this case
@@ -752,7 +1124,74 @@ Defines whether to hide the bottom toolbar for the current viewer.
 config.hideBottomToolbar = true;
 ```
 
+### Layout
+
+#### fitMode
+one of the [`FitModes`](./lib/constants.dart) constants, default value is 'FitWidth'.
+
+Defines the fit mode (default zoom level) of the viewer.
+
+```dart
+config.fitMode = FitModes.fitHeight;
+```
+
+#### layoutMode
+one of the [`LayoutModes`](./lib/constants.dart) constants, default value is 'Continuous'.
+
+Defines the layout mode of the viewer.
+
+```dart
+config.layoutMode = LayoutModes.facingCover;
+```
+
+### Page
+
+#### initialPageNumber
+number, optional
+
+Defines the initial page number that viewer displays when the document is opened. Note that page numbers are 1-indexed.
+
+```dart
+config.initialPageNumber = 5;
+```
+
+#### pageChangeOnTap
+bool, defaults to true.
+
+Defines whether the viewer should change pages when the user taps the edge of a page, while the viewer is in a horizontal viewing mode.
+
+```dart
+config.pageChangeOnTap = true;
+```
+
+#### pageIndicatorEnabled
+bool, defaults to true.
+
+Defines whether to show the page indicator for the viewer.
+
+```dart
+config.pageIndicatorEnabled = true;
+```
+
+#### pageNumberIndicatorAlwaysVisible
+bool, defaults to false.
+
+Defines whether the page indicator will always be visible.
+
+```dart
+config.pageNumberIndicatorAlwaysVisible = true;
+```
+
 ### Annotations
+
+#### annotationPermissionCheckEnabled
+bool, default to false.
+
+Defines whether annotation's flags will be taken into account when it is selected, for example, an annotation with a locked flag can not be resized or moved.
+
+```dart
+config.annotationPermissionCheckEnabled = true;
+```
 
 #### annotationAuthor
 String.
@@ -772,12 +1211,99 @@ If true, the active annotation creation tool will remain in the current annotati
 config.continuousAnnotationEditing = true;
 ```
 
+#### selectAnnotationAfterCreation
+bool, defaults to true.
+
+Defines whether an annotation is selected after it is created. On iOS, this functions for shape and text markup annotations only.
+
+```dart
+config.selectAnnotationAfterCreation = true;
+```
+
+#### disableEditingByAnnotationType
+array of [`Tools`](./lib/constants.dart) constants, defaults to none.
+
+Defines annotation types that cannot be edited after creation.
+
+```dart
+config.disableEditingByAnnotationType = [Tools.annotationCreateTextSquiggly, Tools.annotationCreateTextHighlight, Tools.annotationCreateEllipse];
+```
+
+### Annotation Menu
+
+#### hideAnnotationMenu
+array of [`Tools`](./lib/constants.dart) constants, defaults to none
+
+Defines annotation types that will not show the default annotation menu.
+
+```dart
+config.hideAnnotationMenu = [Tools.annotationCreateArrow, Tools.annotationEraserTool];
+```
+
+#### annotationMenuItems
+array of [`AnnotationMenuItems`](./lib/constants.dart) constants, default contains all items
+
+Defines the menu items that can show when an annotation is selected. 
+
+```dart
+config.annotationMenuItems = [AnnotationMenuItems.search, AnnotationMenuItems.share];
+```
+
+#### overrideAnnotationMenuBehavior
+array of [`AnnotationMenuItems`](./lib/constants.dart) constants, defaults to none
+
+Defines the menu items that will skip default behavior when pressed. They will still be displayed in the annotation menu, and the event handler [`startAnnotationMenuPressedListener`](#startAnnotationMenuPressedListener) will be called from which custom behavior can be implemented.
+
+```dart
+config.overrideAnnotationMenuBehavior = [AnnotationMenuItems.copy];
+```
+
+### Long Press Menu
+
+#### longPressMenuEnabled
+bool, defaults to true
+
+Defines whether to show the popup menu of options after the user long presses on text or blank space on the document.
+
+```dart
+config.longPressMenuEnabled = false;
+```
+
+#### longPressMenuItems
+array of [`LongPressMenuItems`](./lib/constants.dart) constants, optional, default contains all the items
+
+Defines menu items that can be shown when long pressing on text or blank space.
+
+```dart
+config.longPressMenuItems = [LongPressMenuItems.search, LongPressMenuItems.share];
+```
+
+#### overrideLongPressMenuBehavior
+array of [`LongPressMenuItems`](./lib/constants.dart) constants, optional, defaults to none
+
+Defines the menu items on long press that will skip default behavior when pressed. They will still be displayed in the long press menu, and the event handler [`startLongPressMenuPressedListener`](#startLongPressMenuPressedListener) will be called where custom behavior can be implemented.
+
+```dart
+config.overrideLongPressMenuBehavior = [LongPressMenuItems.copy];
+```
+
+### Custom Behavior
+
+#### overrideBehavior
+array of [`Behaviors`](./lib/constants.dart) constants, defaults to false.
+
+Defines actions that should skip default behavior, such as external link click. The event handler [`startBehaviorActivatedListener`](#startBehaviorActivatedListener) will be called when the behavior is activated, where custom behavior can be implemented.
+
+```dart
+config.overrideBehavior = [Behaviors.linkPress];
+```
+
 ### Multi-tab
 
 #### multiTabEnabled
 bool, defaults to false.
 
-Defines whether viewer will use tabs in order to have more than one document open simultaneously (like a web browser). Calling [openDocument](#openDocument) with this value being true will cause a new tab to be opened with the associated document.
+Defines whether viewer will use tabs in order to have more than one document open simultaneously (like a web browser). Calling [`openDocument`](#openDocument) with this value being true will cause a new tab to be opened with the associated document.
 
 ```dart
 config.multiTabEnabled = true;
@@ -786,10 +1312,30 @@ config.multiTabEnabled = true;
 #### tabTitle
 String, default is the file name.
 
-Sets the tab title if [multiTabEnabled](#multiTabEnabled) is true. (For Android, tabTitle is only supported on the widget viewer)
+Sets the tab title if [`multiTabEnabled`](#multiTabEnabled) is true. (For Android, tabTitle is only supported on the widget viewer)
 
 ```dart
 config.tabTitle = 'tab1';
+```
+
+### Signature
+
+#### signSignatureFieldsWithStamps
+bool, defaults to false.
+
+Defines whether signature fields will be signed with image stamps. This is useful if you are saving XFDF to remote source.
+
+```dart
+config.signSignatureFieldsWithStamps = true;
+```
+
+#### showSavedSignatures
+bool, defaults to true.
+
+Defines whether to show saved signatures for re-use when using the signing tool.
+
+```dart
+config.showSavedSignatures = true;
 ```
 
 ### Thumbnail Browser
@@ -801,4 +1347,42 @@ Defines whether user can modify the document using the thumbnail view (eg add/re
 
 ```dart
 config.thumbnailViewEditingEnabled = false;
+```
+
+#### hideThumbnailFilterModes
+array of [`ThumbnailFilterModes`](./lib/constants.dart) constants, defaults to none.
+
+Defines filter Modes that should be hidden in the thumbnails browser.
+
+```dart
+config.hideThumbnailFilterModes = [ThumbnailFilterModes.annotated];
+```
+
+### Others
+
+#### autoSaveEnabled
+bool, dafaults to true.
+
+Defines whether document is automatically saved by the viewer.
+
+```dart
+config.autoSaveEnabled = true;
+```
+
+#### useStylusAsPen
+bool, defaults to true.
+
+Defines whether a stylus should act as a pen when in pan mode. If false, it will act as a finger.
+
+```dart
+config.useStylusAsPen = true;
+```
+
+#### followSystemDarkMode
+bool, Android only, defaults to true.
+
+Defines whether the UI will appear in a dark color when the system is dark mode. If false, it will use viewer setting instead.
+
+```dart
+config.followSystemDarkMode = false;
 ```

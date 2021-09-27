@@ -2,6 +2,9 @@ part of pdftron;
 
 // Functions define the names of the functions
 class Functions {
+  static const setCustomDataForAnnotation = "setCustomDataForAnnotation";
+  static const isBauhubToolMode = "isBauhubToolMode";
+
   static const getPlatformVersion = "getPlatformVersion";
   static const getVersion = "getVersion";
   static const initialize = "initialize";
@@ -12,6 +15,7 @@ class Functions {
   static const deleteAnnotations = "deleteAnnotations";
   static const selectAnnotation = "selectAnnotation";
   static const setFlagsForAnnotations = "setFlagsForAnnotations";
+  static const setPropertiesForAnnotation = "setPropertiesForAnnotation";
   static const importAnnotationCommand = "importAnnotationCommand";
   static const importBookmarkJson = "importBookmarkJson";
   static const saveDocument = "saveDocument";
@@ -19,13 +23,26 @@ class Functions {
   static const getPageCount = "getPageCount";
   static const handleBackButton = "handleBackButton";
   static const getPageCropBox = "getPageCropBox";
+  static const getPageRotation = "getPageRotation";
+  static const setCurrentPage = "setCurrentPage";
+  static const getDocumentPath = "getDocumentPath";
   static const setToolMode = "setToolMode";
   static const setValuesForFields = "setValuesForFields";
   static const setFlagForFields = "setFlagForFields";
   static const setLeadingNavButtonIcon = "setLeadingNavButtonIcon";
   static const closeAllTabs = "closeAllTabs";
-  static const setCustomDataForAnnotation = "setCustomDataForAnnotation";
-  static const isBauhubToolMode = "isBauhubToolMode";
+  static const deleteAllAnnotations = "deleteAllAnnotations";
+  static const openAnnotationList = "openAnnotationList";
+  static const setRequestedOrientation = "setRequestedOrientation";
+  static const gotoPreviousPage = "gotoPreviousPage";
+  static const gotoNextPage = "gotoNextPage";
+  static const gotoFirstPage = "gotoFirstPage";
+  static const gotoLastPage = "gotoLastPage";
+  static const addBookmark = "addBookmark";
+  static const openBookmarkList = "openBookmarkList";
+  static const openOutlineList = "openOutlineList";
+  static const openLayersList = "openLayersList";
+  static const openNavigationLists = "openNavigationLists";
 }
 
 // Parameters define the parameters of the functions
@@ -38,6 +55,7 @@ class Parameters {
   static const xfdf = "xfdf";
   static const bookmarkJson = "bookmarkJson";
   static const pageNumber = "pageNumber";
+  static const title = "title";
   static const toolMode = "toolMode";
   static const fieldNames = "fieldNames";
   static const fields = "fields";
@@ -47,7 +65,9 @@ class Parameters {
   static const annotations = "annotations";
   static const annotation = "annotation";
   static const annotationsWithFlags = "annotationsWithFlags";
+  static const annotationProperties = "annotationProperties";
   static const leadingNavButtonIcon = "leadingNavButtonIcon";
+  static const requestedOrientation = "requestedOrientation";
 }
 
 // Parameters define the parameters of the events
@@ -55,6 +75,10 @@ class EventParameters {
   static const action = "action";
   static const annotations = "annotations";
   static const xfdfCommand = "xfdfCommand";
+  static const data = "data";
+  static const longPressMenuItem = "longPressMenuItem";
+  static const longPressText = "longPressText";
+  static const annotationMenuItem = "annotationMenuItem";
   static const previousPageNumber = "previousPageNumber";
   static const pageNumber = "pageNumber";
 }
@@ -88,11 +112,22 @@ class Buttons {
   static const saveCopyButton = 'saveCopyButton';
   static const editPagesButton = 'editPagesButton';
   static const printButton = 'printButton';
+  static const closeButton = 'closeButton';
   static const fillAndSignButton = 'fillAndSignButton';
   static const prepareFormButton = 'prepareFormButton';
+  static const outlineListButton = 'outlineListButton';
+  static const annotationListButton = 'annotationListButton';
+  static const userBookmarkListButton = 'userBookmarkListButton';
   static const reflowModeButton = 'reflowModeButton';
+  static const editMenuButton = 'editMenuButton';
+  static const cropPageButton = 'cropPageButton';
+  static const moreItemsButton = 'moreItemsButton';
+  static const eraserButton = 'eraserButton';
   static const undo = 'undo';
   static const redo = 'redo';
+
+  // Android only
+  static const editAnnotationToolbarButton = 'editAnnotationToolButton';
 }
 
 // Tools define the various kinds of tools for the viewer
@@ -122,17 +157,62 @@ class Tools {
       'AnnotationCreatePerimeterMeasurement';
   static const annotationCreateAreaMeasurement =
       'AnnotationCreateAreaMeasurement';
+  static const annotationCreateRectangleAreaMeasurement =
+      'AnnotationCreateRectangleAreaMeasurement';
   static const annotationCreateSound = 'AnnotationCreateSound';
   static const annotationCreateFreeHighlighter =
       'AnnotationCreateFreeHighlighter';
   static const annotationCreateRubberStamp = 'AnnotationCreateRubberStamp';
   static const eraser = 'Eraser';
+  static const annotationCreateFileAttachment =
+      'AnnotationCreateFileAttachment';
+  static const annotationCreateRedaction = 'AnnotationCreateRedaction';
+  static const annotationCreateLink = 'AnnotationCreateLink';
+  static const annotationCreateRedactionText = 'AnnotationCreateRedactionText';
+  static const annotationCreateLinkText = 'AnnotationCreateLinkText';
+  static const formCreateTextField = 'FormCreateTextField';
+  static const formCreateCheckboxField = 'FormCreateCheckboxField';
+  static const formCreateSignatureField = 'FormCreateSignatureField';
+  static const formCreateRadioField = 'FormCreateRadioField';
+  static const formCreateComboBoxField = 'FormCreateComboBoxField';
+  static const formCreateListBoxField = 'FormCreateListBoxField';
+
+  // iOS only.
+  static const pencilKitDrawing = 'PencilKitDrawing';
+
+  // Android only.
+  static const annotationSmartPen = 'AnnotationSmartPen';
+  static const annotationLasso = 'AnnotationLasso';
+}
+
+// FitModes define all fit modes in the viewer
+class FitModes {
+  static const fitPage = 'FitPage';
+  static const fitWidth = 'FitWidth';
+  static const fitHeight = 'FitHeight';
+  static const zoom = 'Zoom';
+}
+
+// LayoutModes define all layout modes in the viewer
+class LayoutModes {
+  static const single = 'Single';
+  static const continuous = 'Continuous';
+  static const facing = 'Facing';
+  static const facingContinuous = 'FacingContinuous';
+  static const facingCover = 'FacingCover';
+  static const facingCoverContinuous = 'FacingCoverContinuous';
 }
 
 // FieldFlags define the property flags for a form field
 class FieldFlags {
   static const ReadOnly = 0;
   static const Required = 1;
+}
+
+// ThumbnailFilterModes define the filter modes in thumbnail browser
+class ThumbnailFilterModes {
+  static const annotated = "annotated";
+  static const bookmarked = "bookmarked";
 }
 
 // AnnotationFlags define the flags for any annotation in the document
@@ -149,6 +229,50 @@ class AnnotationFlags {
   static const toggleNoView = "toggleNoView";
 }
 
+// AnnotationProperties define all possible annotation properties
+class AnnotationProperties {
+  // not markup exclusive
+  static const rect = "rect";
+  static const contents = "contents";
+  // markup exclusive
+  static const subject = "subject";
+  static const title = "title";
+  static const contentRect = "contentRect";
+  static const rotation = "rotation";
+}
+
+// Behaviors define all user behaviors in the viewer
+class Behaviors {
+  static const linkPress = "linkPress";
+}
+
+// LongPressMenuItems define all menu items that could show up on long press of text or empty area
+class LongPressMenuItems {
+  static const copy = "copy";
+  static const search = "search";
+  static const share = "share";
+  static const read = "read";
+}
+
+// AnnotationMenuItems define all menu items that could show up on press of annotation
+class AnnotationMenuItems {
+  static const style = "style";
+  static const note = "note";
+  static const copy = "copy";
+  static const delete = "delete";
+  static const flatten = "flatten";
+  static const editText = "editText";
+  static const editInk = "editInk";
+  static const search = "search";
+  static const share = "share";
+  static const markupType = "markupType";
+  static const read = "read";
+  static const screenCapture = "screenCapture";
+  static const playSound = "playSound";
+  static const openAttachment = "openAttachment";
+  static const calibrate = "calibrate";
+}
+
 // DefaultToolbars define a set of pre-designed toolbars for easier customization
 class DefaultToolbars {
   static const view = "PDFTron_View";
@@ -159,6 +283,7 @@ class DefaultToolbars {
   static const prepareForm = "PDFTron_Prepare_Form";
   static const measure = "PDFTron_Measure";
   static const pens = "PDFTron_Pens";
+  static const redaction = "PDFTron_Redact";
   static const favorite = "PDFTron_Favorite";
 }
 
@@ -172,5 +297,32 @@ class ToolbarIcons {
   static const prepareForm = "PDFTron_Prepare_Form";
   static const measure = "PDFTron_Measure";
   static const pens = "PDFTron_Pens";
+  static const redaction = "PDFTron_Redact";
   static const favorite = "PDFTron_Favorite";
+}
+
+// PTOrientation defines the screen orientations for the viewer. Android only.
+class PTOrientation {
+  static const unspecified = -1;
+  static const landscape = 0;
+  static const portrait = 1;
+  static const sensorLandscape = 6;
+  static const sensorPortrait = 7;
+  static const reverseLandscape = 8;
+  static const reversePortrait = 9;
+  static const userLandscape = 11; // Only changes direction if user has enabled sensor-based rotation.
+  static const userPortrait = 12; // Only changes direction if user has enabled sensor-based rotation.
+}
+
+// ViewModePickerItem defines the items in the view mode dialog.
+class ViewModePickerItem {
+  static const Crop = "viewModeCrop";
+  static const Rotation = "viewModeRotation";
+  static const ColorMode = "viewModeColorMode";
+}
+
+class DefaultEraserType {
+  static const annotationEraser = "annotationEraser";
+  static const hybrideEraser = "hybrideEraser";
+  static const inkEraser = "inkEraser";
 }

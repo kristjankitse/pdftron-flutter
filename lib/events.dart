@@ -1,5 +1,6 @@
 part of pdftron;
 
+const _willHideEditMenuChannel = const EventChannel('will_hide_edit_menu_event');
 const _exportAnnotationCommandChannel =
     const EventChannel('export_annotation_command_event');
 const _exportBookmarkChannel = const EventChannel('export_bookmark_event');
@@ -11,12 +12,19 @@ const _annotationsSelectedChannel =
     const EventChannel('annotations_selected_event');
 const _formFieldValueChangedChannel =
     const EventChannel('form_field_value_changed_event');
+const _behaviorActivatedChannel =
+    const EventChannel('behavior_activated_event');
+const _longPressMenuPressedChannel =
+    const EventChannel('long_press_menu_pressed_event');
+const _annotationMenuPressedChannel =
+    const EventChannel('annotation_menu_pressed_event');
 const _leadingNavButtonPressedChannel =
     const EventChannel('leading_nav_button_pressed_event');
 const _pageChangedChannel = const EventChannel('page_changed_event');
 const _zoomChangedChannel = const EventChannel('zoom_changed_event');
-const _willHideEditMenuChannel = const EventChannel('will_hide_edit_menu_event');
+const _pageMovedChannel = const EventChannel('page_moved_event');
 
+typedef void WillHideEditMenuListener();
 typedef void ExportAnnotationCommandListener(dynamic xfdfCommand);
 typedef void ExportBookmarkListener(dynamic bookmarkJson);
 typedef void DocumentLoadedListener(dynamic filePath);
@@ -24,14 +32,20 @@ typedef void DocumentErrorListener();
 typedef void AnnotationChangedListener(dynamic action, dynamic annotations);
 typedef void AnnotationsSelectedListener(dynamic annotationWithRects);
 typedef void FormFieldValueChangedListener(dynamic fields);
+typedef void BehaviorActivatedListener(dynamic action, dynamic data);
+typedef void LongPressMenuPressedChannelListener(
+    dynamic longPressMenuItem, dynamic longPressText);
+typedef void AnnotationMenuPressedChannelListener(
+    dynamic annotationMenuItem, dynamic annotations);
 typedef void LeadingNavbuttonPressedlistener();
 typedef void PageChangedListener(
     dynamic previousPageNumber, dynamic pageNumber);
 typedef void ZoomChangedListener(dynamic zoom);
-typedef void WillHideEditMenuListener();
+typedef void PageMovedListener(dynamic previousPageNumber, dynamic pageNumber);
 typedef void CancelListener();
 
 enum eventSinkId {
+  willHideEditMenuId,
   exportAnnotationId,
   exportBookmarkId,
   documentLoadedId,
@@ -39,10 +53,25 @@ enum eventSinkId {
   annotationChangedId,
   annotationsSelectedId,
   formFieldValueChangedId,
+  behaviorActivatedId,
+  longPressMenuPressedId,
+  annotationMenuPressedId,
   leadingNavButtonPressedId,
   pageChangedId,
   zoomChangedId,
-  willHideEditMenuId
+  pageMovedId,
+}
+
+CancelListener startWillHideEditMenuListener(WillHideEditMenuListener listener) {
+  var subscription = _willHideEditMenuChannel
+      .receiveBroadcastStream(eventSinkId.willHideEditMenuId.index)
+      .listen((stub) {
+    listener();
+  }, cancelOnError: true);
+
+  return () {
+    subscription.cancel();
+  };
 }
 
 CancelListener startExportAnnotationCommandListener(
@@ -145,6 +174,59 @@ CancelListener startFormFieldValueChangedListener(
   };
 }
 
+CancelListener startBehaviorActivatedListener(
+    BehaviorActivatedListener listener) {
+  var subscription = _behaviorActivatedChannel
+      .receiveBroadcastStream(eventSinkId.behaviorActivatedId.index)
+      .listen((behaviorString) {
+    dynamic behaviorObject = jsonDecode(behaviorString);
+    dynamic action = behaviorObject[EventParameters.action];
+    dynamic data = behaviorObject[EventParameters.data];
+    listener(action, data);
+  }, cancelOnError: true);
+
+  return () {
+    subscription.cancel();
+  };
+}
+
+CancelListener startLongPressMenuPressedListener(
+    LongPressMenuPressedChannelListener listener) {
+  var subscription = _longPressMenuPressedChannel
+      .receiveBroadcastStream(eventSinkId.longPressMenuPressedId.index)
+      .listen((longPressString) {
+    dynamic longPressObject = jsonDecode(longPressString);
+    dynamic longPressMenuItem =
+        longPressObject[EventParameters.longPressMenuItem];
+    dynamic longPressText = longPressObject[EventParameters.longPressText];
+    listener(longPressMenuItem, longPressText);
+  }, cancelOnError: true);
+  return () {
+    subscription.cancel();
+  };
+}
+
+CancelListener startAnnotationMenuPressedListener(
+    AnnotationMenuPressedChannelListener listener) {
+  var subscription = _annotationMenuPressedChannel
+      .receiveBroadcastStream(eventSinkId.annotationMenuPressedId.index)
+      .listen((annotationMenuString) {
+    dynamic annotationMenuObject = jsonDecode(annotationMenuString);
+    dynamic annotationMenuItem =
+        annotationMenuObject[EventParameters.annotationMenuItem];
+    dynamic annotations = annotationMenuObject[EventParameters.annotations];
+    List<Annot> annotList = new List<Annot>();
+    for (dynamic annotation in annotations) {
+      annotList.add(Annot.fromJson(annotation));
+    }
+    listener(annotationMenuItem, annotList);
+  }, cancelOnError: true);
+
+  return () {
+    subscription.cancel();
+  };
+}
+
 CancelListener startLeadingNavButtonPressedListener(
     LeadingNavbuttonPressedlistener listener) {
   var subscription = _leadingNavButtonPressedChannel
@@ -184,11 +266,14 @@ CancelListener startZoomChangedListener(ZoomChangedListener listener) {
   };
 }
 
-CancelListener startWillHideEditMenuListener(WillHideEditMenuListener listener) {
-  var subscription = _willHideEditMenuChannel
-      .receiveBroadcastStream(eventSinkId.willHideEditMenuId.index)
-      .listen((stub) {
-    listener();
+CancelListener startPageMovedListener(PageMovedListener listener) {
+  var subscription = _pageMovedChannel
+    .receiveBroadcastStream(eventSinkId.pageMovedId.index)
+    .listen((pagesString) {
+      dynamic pagesObject = jsonDecode(pagesString);
+      dynamic previousPageNumber = pagesObject[EventParameters.previousPageNumber];
+      dynamic pageNumber = pagesObject[EventParameters.pageNumber];
+      listener(previousPageNumber, pageNumber);
   }, cancelOnError: true);
 
   return () {

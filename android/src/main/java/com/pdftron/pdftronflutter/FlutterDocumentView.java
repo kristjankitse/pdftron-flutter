@@ -15,17 +15,21 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
 
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_WILL_HIDE_EDIT_MENU;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ANNOTATIONS_SELECTED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ANNOTATION_CHANGED;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_BEHAVIOR_ACTIVATED;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ANNOTATION_MENU_PRESSED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_DOCUMENT_ERROR;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_DOCUMENT_LOADED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_EXPORT_ANNOTATION_COMMAND;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_EXPORT_BOOKMARK;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_FORM_FIELD_VALUE_CHANGED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_LEADING_NAV_BUTTON_PRESSED;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_LONG_PRESS_MENU_PRESSED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_PAGE_CHANGED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ZOOM_CHANGED;
-import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_WILL_HIDE_EDIT_MENU;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_PAGE_MOVED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_OPEN_DOCUMENT;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_SET_LEADING_NAV_BUTTON_ICON;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_LEADING_NAV_BUTTON_ICON;
@@ -53,6 +57,19 @@ public class FlutterDocumentView implements PlatformView, MethodChannel.MethodCa
     }
 
     public void registerWith(BinaryMessenger messenger) {
+
+        final EventChannel willHideEditMenuEventChannel = new EventChannel(messenger, EVENT_WILL_HIDE_EDIT_MENU);
+        willHideEditMenuEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                documentView.setWillHideEditMenuEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                documentView.setWillHideEditMenuEventEmitter(null);
+            }
+        });
 
         final EventChannel annotEventChannel = new EventChannel(messenger, EVENT_EXPORT_ANNOTATION_COMMAND);
         annotEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
@@ -145,6 +162,45 @@ public class FlutterDocumentView implements PlatformView, MethodChannel.MethodCa
             }
         });
 
+        final EventChannel behaviorActivatedEventChannel = new EventChannel(messenger, EVENT_BEHAVIOR_ACTIVATED);
+        behaviorActivatedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                documentView.setBehaviorActivatedEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                documentView.setBehaviorActivatedEventEmitter(null);
+            }
+        });
+
+        final EventChannel longPressMenuPressedEventChannel = new EventChannel(messenger, EVENT_LONG_PRESS_MENU_PRESSED);
+        longPressMenuPressedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                documentView.setLongPressMenuPressedEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                documentView.setLongPressMenuPressedEventEmitter(null);
+            }
+        });
+
+        final EventChannel annotationMenuPressedEventChannel = new EventChannel(messenger, EVENT_ANNOTATION_MENU_PRESSED);
+        annotationMenuPressedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                documentView.setAnnotationMenuPressedEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                documentView.setAnnotationMenuPressedEventEmitter(null);
+            }
+        });
+
         final EventChannel leadingNavButtonPressedEventChannel = new EventChannel(messenger, EVENT_LEADING_NAV_BUTTON_PRESSED);
         leadingNavButtonPressedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
@@ -154,7 +210,7 @@ public class FlutterDocumentView implements PlatformView, MethodChannel.MethodCa
 
             @Override
             public void onCancel(Object arguments) {
-                documentView.setLeadingNavButtonPressedEventEmitter(null);
+                documentView.setLeadingNavButtonIcon(null);
             }
         });
 
@@ -184,16 +240,16 @@ public class FlutterDocumentView implements PlatformView, MethodChannel.MethodCa
             }
         });
 
-        final EventChannel willHideEditMenuEventChannel = new EventChannel(messenger, EVENT_WILL_HIDE_EDIT_MENU);
-        willHideEditMenuEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+        final EventChannel pageMovedEventChannel = new EventChannel(messenger, EVENT_PAGE_MOVED);
+        pageMovedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object arguments, EventChannel.EventSink emitter) {
-                documentView.setWillHideEditMenuEventEmitter(emitter);
+                documentView.setPageMovedEventEmitter(emitter);
             }
 
             @Override
             public void onCancel(Object arguments) {
-                documentView.setWillHideEditMenuEventEmitter(null);
+                documentView.setPageMovedEventEmitter(null);
             }
         });
     }

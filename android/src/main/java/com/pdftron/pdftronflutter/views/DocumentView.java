@@ -5,6 +5,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentManager;
@@ -28,6 +29,7 @@ import com.pdftron.pdftronflutter.helpers.PluginUtils;
 import com.pdftron.pdftronflutter.helpers.ViewerComponent;
 import com.pdftron.pdftronflutter.helpers.ViewerImpl;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
@@ -48,8 +50,26 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     private ToolManagerBuilder mToolManagerBuilder;
     private PDFViewCtrlConfig mPDFViewCtrlConfig;
     private ViewerConfig.Builder mBuilder;
-    private String mCacheDir;
 
+    private String mExportDir;
+    private String mOpenUrlCacheDir;
+
+    private int mInitialPageNumber;
+
+    private boolean mIsBase64;
+    private ArrayList<File> mTempFiles = new ArrayList<>();
+
+    private ArrayList<String> mActionOverrideItems;
+    private ArrayList<String> mLongPressMenuItems;
+    private ArrayList<String> mLongPressMenuOverrideItems;
+    private ArrayList<String> mHideAnnotationMenuTools;
+    private ArrayList<String> mAnnotationMenuItems;
+    private ArrayList<String> mAnnotationMenuOverrideItems;
+    private boolean mAutoSaveEnabled;
+    private boolean mUseStylusAsPen;
+    private boolean mSignSignatureFieldWithStamps;
+
+    private EventChannel.EventSink sWillHideEditMenuEventEmitter;
     private EventChannel.EventSink sExportAnnotationCommandEventEmitter;
     private EventChannel.EventSink sExportBookmarkEventEmitter;
     private EventChannel.EventSink sDocumentLoadedEventEmitter;
@@ -57,10 +77,14 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     private EventChannel.EventSink sAnnotationChangedEventEmitter;
     private EventChannel.EventSink sAnnotationsSelectedEventEmitter;
     private EventChannel.EventSink sFormFieldValueChangedEventEmitter;
+    private EventChannel.EventSink sBehaviorActivatedEventEmitter;
+    private EventChannel.EventSink sLongPressMenuPressedEventEmitter;
+    private EventChannel.EventSink sAnnotationMenuPressedEventEmitter;
     private EventChannel.EventSink sLeadingNavButtonPressedEventEmitter;
     private EventChannel.EventSink sPageChangedEventEmitter;
     private EventChannel.EventSink sZoomChangedEventEmitter;
-    private EventChannel.EventSink sWillHideEditMenuEventEmitter;
+    private EventChannel.EventSink sPageMovedEventEmitter;
+
     private MethodChannel.Result sFlutterLoadResult;
 
     private HashMap<Annot, Integer> mSelectedAnnots;
@@ -72,6 +96,9 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
 
     private boolean mFromAttach;
     private boolean mDetached;
+
+    // TODO: remove when flutter view does not detach one additional time
+    private boolean mFirstDetached = false;
 
     public DocumentView(@NonNull Context context) {
         this(context, null);
@@ -93,13 +120,32 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
 
         mToolManagerBuilder.addCustomizedTool(BauhubTaskTool.MODE, BauhubTaskTool.class);
 
+        mInitialPageNumber = configInfo.getInitialPageNumber();
+        mIsBase64 = configInfo.isBase64();
+        mExportDir = configInfo.getExportPath();
+        mOpenUrlCacheDir = configInfo.getOpenUrlPath();
+        mTempFiles.add(configInfo.getTempFile());
+
         setDocumentUri(configInfo.getFileUri());
         setPassword(password);
         setCustomHeaders(configInfo.getCustomHeaderJson());
 
+        mLongPressMenuItems = configInfo.getLongPressMenuItems();
+        mLongPressMenuOverrideItems = configInfo.getLongPressMenuOverrideItems();
+        mHideAnnotationMenuTools = configInfo.getHideAnnotationMenuTools();
+        mAnnotationMenuItems = configInfo.getAnnotationMenuItems();
+        mAnnotationMenuOverrideItems = configInfo.getAnnotationMenuOverrideItems();
+
         setShowNavIcon(configInfo.isShowLeadingNavButton());
+
         setViewerConfig(getConfig());
         setFlutterLoadResult(result);
+
+        mActionOverrideItems = configInfo.getActionOverrideItems();
+
+        mAutoSaveEnabled = configInfo.isAutoSaveEnabled();
+        mUseStylusAsPen = configInfo.isUseStylusAsPen();
+        mSignSignatureFieldWithStamps = configInfo.isSignSignatureFieldWithStamps();
 
         mTabTitle = configInfo.getTabTitle();
 
@@ -161,14 +207,11 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
 
         PdfViewCtrlSettingsManager.setFullScreenMode(context, false);
 
-        mCacheDir = context.getCacheDir().getAbsolutePath();
+        mExportDir = context.getCacheDir().getAbsolutePath();
+        mOpenUrlCacheDir = context.getCacheDir().getAbsolutePath();
         mToolManagerBuilder = ToolManagerBuilder.from();
         mBuilder = new ViewerConfig.Builder();
-        mBuilder
-                .fullscreenModeEnabled(false)
-                .multiTabEnabled(false)
-                .showCloseTabOption(false)
-                .useSupportActionBar(false);
+        mBuilder.fullscreenModeEnabled(false);
 
         mPDFViewCtrlConfig = PDFViewCtrlConfig.getDefaultConfig(context);
     }
@@ -183,9 +226,11 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     }
 
     private ViewerConfig getConfig() {
-        if (mCacheDir != null) {
-            mBuilder.openUrlCachePath(mCacheDir)
-                    .saveCopyExportPath(mCacheDir);
+        if (mExportDir != null) {
+            mBuilder.saveCopyExportPath(mExportDir);
+        }
+        if (mOpenUrlCacheDir != null) {
+            mBuilder.openUrlCachePath(mOpenUrlCacheDir);
         }
         return mBuilder
                 .pdfViewCtrlConfig(mPDFViewCtrlConfig)
@@ -266,10 +311,26 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
         return handleOpenDocError(this);
     }
 
+    public int getInitialPageNumber() {
+        return mInitialPageNumber;
+    }
+
+    public boolean isBase64() {
+        return mIsBase64;
+    }
+
+    public ArrayList<File> getTempFiles() {
+        return mTempFiles;
+    }
+
     @Override
     public void onDetachedFromWindow() {
+        if (mFirstDetached) {
+            handleOnDetach(this);
+        }
+
+        mFirstDetached = true;
         mDetached = true;
-        handleOnDetach(this);
 
         // remove detached view
         if (mPdfViewCtrlTabHostFragment != null) {
@@ -280,6 +341,18 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
         }
 
         super.onDetachedFromWindow();
+    }
+
+    public boolean isAutoSaveEnabled() {
+        return mAutoSaveEnabled;
+    }
+
+    public boolean isUseStylusAsPen() {
+        return mUseStylusAsPen;
+    }
+
+    public boolean isSignSignatureFieldWithStamps() {
+        return mSignSignatureFieldWithStamps;
     }
 
     @Override
@@ -315,6 +388,18 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
         sFormFieldValueChangedEventEmitter = emitter;
     }
 
+    public void setBehaviorActivatedEventEmitter(EventChannel.EventSink emitter) {
+        sBehaviorActivatedEventEmitter = emitter;
+    }
+
+    public void setLongPressMenuPressedEventEmitter(EventChannel.EventSink emitter) {
+        sLongPressMenuPressedEventEmitter = emitter;
+    }
+
+    public void setAnnotationMenuPressedEventEmitter(EventChannel.EventSink emitter) {
+        sAnnotationMenuPressedEventEmitter = emitter;
+    }
+
     public void setLeadingNavButtonPressedEventEmitter(EventChannel.EventSink emitter) {
         sLeadingNavButtonPressedEventEmitter = emitter;
     }
@@ -329,6 +414,10 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
 
     public void setWillHideEditMenuEventEmitter(EventChannel.EventSink emitter) {
         sWillHideEditMenuEventEmitter = emitter;
+    }
+
+    public void setPageMovedEventEmitter(EventChannel.EventSink emitter) {
+        sPageMovedEventEmitter = emitter;
     }
 
     public void setFlutterLoadResult(MethodChannel.Result result) {
@@ -375,6 +464,20 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     }
 
     @Override
+    public EventChannel.EventSink getBehaviorActivatedEventEmitter() {
+        return sBehaviorActivatedEventEmitter;
+    }
+
+    @Override
+    public EventChannel.EventSink getLongPressMenuPressedEventEmitter() {
+        return sLongPressMenuPressedEventEmitter;
+    }
+
+    @Override
+    public EventChannel.EventSink getAnnotationMenuPressedEventEmitter() {
+        return sAnnotationMenuPressedEventEmitter;
+    }
+
     public EventChannel.EventSink getLeadingNavButtonPressedEventEmitter() {
         return sLeadingNavButtonPressedEventEmitter;
     }
@@ -394,6 +497,8 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
         return sWillHideEditMenuEventEmitter;
     }
 
+    public EventChannel.EventSink getPageMovedEventEmitter() { return sPageMovedEventEmitter; }
+
     @Override
     public MethodChannel.Result getFlutterLoadResult() {
         MethodChannel.Result result = sFlutterLoadResult;
@@ -404,6 +509,36 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     @Override
     public HashMap<Annot, Integer> getSelectedAnnots() {
         return mSelectedAnnots;
+    }
+
+    @Override
+    public ArrayList<String> getActionOverrideItems() {
+        return mActionOverrideItems;
+    }
+
+    @Override
+    public ArrayList<String> getLongPressMenuItems() {
+        return mLongPressMenuItems;
+    }
+
+    @Override
+    public ArrayList<String> getLongPressMenuOverrideItems() {
+        return mLongPressMenuOverrideItems;
+    }
+
+    @Override
+    public ArrayList<String> getHideAnnotationMenuTools() {
+        return mHideAnnotationMenuTools;
+    }
+
+    @Override
+    public ArrayList<String> getAnnotationMenuItems() {
+        return mAnnotationMenuItems;
+    }
+
+    @Override
+    public ArrayList<String> getAnnotationMenuOverrideItems() {
+        return mAnnotationMenuOverrideItems;
     }
 
     // Convenience

@@ -4,11 +4,8 @@ import android.content.Context;
 
 import com.pdftron.common.PDFNetException;
 import com.pdftron.pdf.PDFNet;
-import com.pdftron.pdf.tools.ToolManager;
 import com.pdftron.pdftronflutter.factories.DocumentViewFactory;
 import com.pdftron.pdftronflutter.helpers.PluginUtils;
-
-import java.util.ArrayList;
 
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
@@ -17,27 +14,34 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_WILL_HIDE_EDIT_MENU;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ANNOTATIONS_SELECTED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ANNOTATION_CHANGED;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_BEHAVIOR_ACTIVATED;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ANNOTATION_MENU_PRESSED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_DOCUMENT_ERROR;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_DOCUMENT_LOADED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_EXPORT_ANNOTATION_COMMAND;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_EXPORT_BOOKMARK;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_FORM_FIELD_VALUE_CHANGED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_LEADING_NAV_BUTTON_PRESSED;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_LONG_PRESS_MENU_PRESSED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_PAGE_CHANGED;
-import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_WILL_HIDE_EDIT_MENU;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_PAGE_MOVED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ZOOM_CHANGED;
+
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_GET_PLATFORM_VERSION;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_GET_VERSION;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_INITIALIZE;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_OPEN_DOCUMENT;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_SET_LEADING_NAV_BUTTON_ICON;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_SET_REQUESTED_ORIENTATION;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_CONFIG;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_DOCUMENT;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_LEADING_NAV_BUTTON_ICON;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_LICENSE_KEY;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_PASSWORD;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_REQUESTED_ORIENTATION;
 
 /**
  * PdftronFlutterPlugin
@@ -45,8 +49,6 @@ import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_PASSWORD;
 public class PdftronFlutterPlugin implements MethodCallHandler {
 
     private final Context mContext;
-
-    private ArrayList<ToolManager.ToolMode> mDisabledTools = new ArrayList<>();
 
     public PdftronFlutterPlugin(Context context) {
         mContext = context;
@@ -59,6 +61,20 @@ public class PdftronFlutterPlugin implements MethodCallHandler {
         final MethodChannel methodChannel = new MethodChannel(registrar.messenger(), "pdftron_flutter");
         methodChannel.setMethodCallHandler(new PdftronFlutterPlugin(registrar.activeContext()));
 
+        final EventChannel willHideEditMenuEventChannel = new EventChannel(registrar.messenger(), EVENT_WILL_HIDE_EDIT_MENU);
+        willHideEditMenuEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                FlutterDocumentActivity.setWillHideEditMenuEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                FlutterDocumentActivity.setWillHideEditMenuEventEmitter(null);
+
+            }
+        });
+        
         final EventChannel annotEventChannel = new EventChannel(registrar.messenger(), EVENT_EXPORT_ANNOTATION_COMMAND);
         annotEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
@@ -150,6 +166,32 @@ public class PdftronFlutterPlugin implements MethodCallHandler {
             }
         });
 
+        final EventChannel behaviorActivatedEventChannel = new EventChannel(registrar.messenger(), EVENT_BEHAVIOR_ACTIVATED);
+        behaviorActivatedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                FlutterDocumentActivity.setBehaviorActivatedEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                FlutterDocumentActivity.setBehaviorActivatedEventEmitter(null);
+            }
+        });
+
+        final EventChannel longPressMenuPressedEventChannel = new EventChannel(registrar.messenger(), EVENT_LONG_PRESS_MENU_PRESSED);
+        longPressMenuPressedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                FlutterDocumentActivity.setLongPressMenuPressedEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                FlutterDocumentActivity.setLongPressMenuPressedEventEmitter(null);
+            }
+        });
+
         final EventChannel leadingNavButtonPressedEventChannel = new EventChannel(registrar.messenger(), EVENT_LEADING_NAV_BUTTON_PRESSED);
         leadingNavButtonPressedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
@@ -160,6 +202,19 @@ public class PdftronFlutterPlugin implements MethodCallHandler {
             @Override
             public void onCancel(Object arguments) {
                 FlutterDocumentActivity.setLeadingNavButtonPressedEventEmitter(null);
+            }
+        });
+
+        final EventChannel annotationMenuPressedEventChannel = new EventChannel(registrar.messenger(), EVENT_ANNOTATION_MENU_PRESSED);
+        annotationMenuPressedEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                FlutterDocumentActivity.setAnnotationMenuPressedEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                FlutterDocumentActivity.setAnnotationMenuPressedEventEmitter(null);
             }
         });
 
@@ -189,16 +244,17 @@ public class PdftronFlutterPlugin implements MethodCallHandler {
             }
         });
 
-        final EventChannel willHideEditMenuEventChannel = new EventChannel(registrar.messenger(), EVENT_WILL_HIDE_EDIT_MENU);
-        willHideEditMenuEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+
+        final EventChannel pageMovedEventChanel = new EventChannel(registrar.messenger(), EVENT_PAGE_MOVED);
+        pageMovedEventChanel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object arguments, EventChannel.EventSink emitter) {
-                FlutterDocumentActivity.setWillHideEditMenuEventEmitter(emitter);
+                FlutterDocumentActivity.setPageMovedEventEmitter(emitter);
             }
 
             @Override
             public void onCancel(Object arguments) {
-                FlutterDocumentActivity.setWillHideEditMenuEventEmitter(null);
+                FlutterDocumentActivity.setPageMovedEventEmitter(null);
             }
         });
 
@@ -240,6 +296,11 @@ public class PdftronFlutterPlugin implements MethodCallHandler {
             case FUNCTION_SET_LEADING_NAV_BUTTON_ICON: {
                 String leadingNavButtonIcon = call.argument(KEY_LEADING_NAV_BUTTON_ICON);
                 FlutterDocumentActivity.setLeadingNavButtonIcon(leadingNavButtonIcon);
+                break;
+            }
+            case FUNCTION_SET_REQUESTED_ORIENTATION: {
+                int requestedOrientation = call.argument(KEY_REQUESTED_ORIENTATION);
+                FlutterDocumentActivity.setOrientation(requestedOrientation);
                 break;
             }
             default:

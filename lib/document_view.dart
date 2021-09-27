@@ -42,6 +42,17 @@ class DocumentViewController {
 
   final MethodChannel _channel;
 
+  Future<Rect> setCustomDataForAnnotation(Annot annotation, List<String> fieldNames) async {
+    return _channel.invokeMethod(Functions.setCustomDataForAnnotation,
+        <String, dynamic>{Parameters.annotation: jsonEncode(annotation), Parameters.fieldNames: fieldNames});
+  }
+
+  Future<bool> isBauhubToolMode() async {
+    String result = await _channel.invokeMethod(Functions.isBauhubToolMode);
+    print(result);
+    return result == 'true';
+  }
+
   Future<void> openDocument(String document, {String password, Config config}) {
     return _channel.invokeMethod(Functions.openDocument, <String, dynamic>{
       Parameters.document: document,
@@ -89,6 +100,15 @@ class DocumentViewController {
     });
   }
 
+  Future<void> setPropertiesForAnnotation(
+      Annot annotation, AnnotProperty property) {
+    return _channel
+        .invokeMethod(Functions.setPropertiesForAnnotation, <String, dynamic>{
+      Parameters.annotation: jsonEncode(annotation),
+      Parameters.annotationProperties: jsonEncode(property),
+    });
+  }
+
   Future<void> importAnnotationCommand(String xfdfCommand) {
     return _channel.invokeMethod(Functions.importAnnotationCommand,
         <String, dynamic>{Parameters.xfdfCommand: xfdfCommand});
@@ -97,6 +117,14 @@ class DocumentViewController {
   Future<void> importBookmarkJson(String bookmarkJson) {
     return _channel.invokeMethod(Functions.importBookmarkJson,
         <String, dynamic>{Parameters.bookmarkJson: bookmarkJson});
+  }
+
+  Future<void> addBookmark(String title, int pageNumber) {
+    return _channel
+        .invokeMethod(Functions.addBookmark, <String, dynamic>{
+      Parameters.title: title,
+      Parameters.pageNumber: pageNumber
+    });
   }
 
   Future<String> saveDocument() {
@@ -119,6 +147,21 @@ class DocumentViewController {
     String cropBoxString = await _channel.invokeMethod(Functions.getPageCropBox,
         <String, dynamic>{Parameters.pageNumber: pageNumber});
     return Rect.fromJson(jsonDecode(cropBoxString));
+  }
+
+  Future<int> getPageRotation(int pageNumber) async {
+    int pageRotation = await _channel.invokeMethod(Functions.getPageRotation,
+        <String, dynamic>{Parameters.pageNumber: pageNumber});
+    return pageRotation;
+  }
+
+  Future<bool> setCurrentPage(int pageNumber) {
+    return _channel.invokeMethod(Functions.setCurrentPage,
+        <String, dynamic>{Parameters.pageNumber: pageNumber});
+  }
+
+  Future<String> getDocumentPath() {
+    return _channel.invokeMethod(Functions.getDocumentPath);
   }
 
   Future<void> setToolMode(String toolMode) {
@@ -149,15 +192,43 @@ class DocumentViewController {
     return _channel.invokeMethod(Functions.closeAllTabs);
   }
 
-  Future<Rect> setCustomDataForAnnotation(Annot annotation, List<String> fieldNames) async {
-    return _channel.invokeMethod(Functions.setCustomDataForAnnotation,
-        <String, dynamic>{Parameters.annotation: jsonEncode(annotation), Parameters.fieldNames: fieldNames});
+  Future<void> deleteAllAnnotations() {
+    return _channel.invokeMethod(Functions.deleteAllAnnotations);
   }
 
-  Future<bool> isBauhubToolMode() async {
-    String result = await _channel.invokeMethod(Functions.isBauhubToolMode);
-    print(result);
-    return result == 'true';
+  Future<void> openAnnotationList() {
+    return _channel.invokeMethod(Functions.openAnnotationList);
   }
 
+  Future<void> openBookmarkList() {
+    return _channel.invokeMethod(Functions.openBookmarkList);
+  }
+
+  Future<void> openOutlineList() {
+    return _channel.invokeMethod(Functions.openOutlineList);
+  }
+
+  Future<void> openLayersList() {
+    return _channel.invokeMethod(Functions.openLayersList);
+  }
+
+  Future<void> openNavigationLists() {
+    return _channel.invokeMethod(Functions.openNavigationLists);
+  }
+
+  Future<bool> gotoPreviousPage() {
+    return _channel.invokeMethod(Functions.gotoPreviousPage);
+  }
+
+  Future<bool> gotoNextPage() {
+    return _channel.invokeMethod(Functions.gotoNextPage);
+  }
+
+  Future<bool> gotoFirstPage() {
+    return _channel.invokeMethod(Functions.gotoFirstPage);
+  }
+
+  Future<bool> gotoLastPage() {
+    return _channel.invokeMethod(Functions.gotoLastPage);
+  }
 }
