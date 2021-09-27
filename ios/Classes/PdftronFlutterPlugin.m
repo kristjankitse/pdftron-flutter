@@ -16,6 +16,7 @@
 @property (nonatomic, strong) FlutterEventSink leadingNavButtonPressedEventSink;
 @property (nonatomic, strong) FlutterEventSink pageChangedEventSink;
 @property (nonatomic, strong) FlutterEventSink zoomChangedEventSink;
+@property (nonatomic, strong) FlutterEventSink willHideEditMenuEventSink;
 
 @property (nonatomic, assign, getter=isWidgetView) BOOL widgetView;
 @property (nonatomic, assign, getter=isMultiTabSet) BOOL multiTabSet;
@@ -135,6 +136,8 @@
 
     FlutterEventChannel* zoomChangedEventChannel = [FlutterEventChannel eventChannelWithName:PTZoomChangedEventKey binaryMessenger:messenger];
 
+    FlutterEventChannel* willHideEditMenuEventChannel = [FlutterEventChannel eventChannelWithName:PTWillHideEditMenuEventKey binaryMessenger:messenger];
+
     [xfdfEventChannel setStreamHandler:self];
     
     [bookmarkEventChannel setStreamHandler:self];
@@ -154,6 +157,8 @@
     [pageChangedEventChannel setStreamHandler:self];
     
     [zoomChangedEventChannel setStreamHandler:self];
+
+    [willHideEditMenuEventChannel setStreamHandler:self];
 }
 
 #pragma mark - Configurations
@@ -619,6 +624,9 @@
         case zoomChangedId:
             self.zoomChangedEventSink = events;
             break;
+        case willHideEditMenuId:
+            self.willHideEditMenuEventSink = events;
+            break;
     }
     
     return Nil;
@@ -659,6 +667,9 @@
             break;
         case zoomChangedId:
             self.zoomChangedEventSink = nil;
+            break;
+        case willHideEditMenuId:
+            self.willHideEditMenuEventSink = nil;
             break;
     }
     
@@ -755,6 +766,14 @@
     }
 }
 
+-(void)documentController:(PTDocumentController *)docVC willHideEditMenu:(nullable NSString *)nav
+{
+    if (self.willHideEditMenuEventSink != nil)
+    {
+        self.willHideEditMenuEventSink(nil);
+    }
+}
+
 #pragma mark - Functions
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
@@ -816,9 +835,79 @@
         [self setLeadingNavButtonIcon:leadingNavButtonIcon resultToken:result];
     } else if ([call.method isEqualToString:PTCloseAllTabsKey]) {
         [self closeAllTabs:result];
+    } else if ([call.method isEqualToString:PTSetCustomDataForAnnotationKey]) {
+        NSString *annotation = [PdftronFlutterPlugin PT_idAsNSString:call.arguments[PTAnnotationArgumentKey]];
+        NSArray *fieldNames = [PdftronFlutterPlugin PT_idAsArray:call.arguments[PTFieldNamesArgumentKey]];
+        [self setCustomDataForAnnotation:annotation fieldNames:fieldNames resultToken:result];
+    } else if ([call.method isEqualToString:PTIsBauhubToolModeKey]) {
+        [self isBauhubToolMode:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
+}
+
+- (void)setCustomDataForAnnotation:(NSString *)annotation fieldNames:(NSArray <NSString *> *)fieldNames resultToken:(FlutterResult)flutterResult
+{
+    PTDocumentController *documentController = [self getDocumentController];
+    if(documentController.document == Nil)
+    {
+        // something is wrong, no document.
+        NSLog(@"Error: The document view controller has no document.");
+        
+        flutterResult([FlutterError errorWithCode:@"set_custom_data_for_annotation" message:@"Failed to set custom data" details:@"Error: The document view controller has no document."]);
+        return;
+    }
+    
+    NSDictionary *annotationJson = [PdftronFlutterPlugin PT_idAsNSDict:[PdftronFlutterPlugin PT_JSONStringToId:annotation]];
+    NSString *annotId = [PdftronFlutterPlugin PT_idAsNSString:annotationJson[PTAnnotIdKey]];
+    int pageNumber = [[PdftronFlutterPlugin PT_idAsNSNumber:annotationJson[PTAnnotPageNumberKey]] intValue];
+    NSError* error;
+    PTAnnot *annot = [PdftronFlutterPlugin findAnnotWithUniqueID:annotId onPageNumber:pageNumber documentController:documentController error:&error];
+
+    if (error) {
+        NSLog(@"Error: Failed to find annotation with unique id. %@", error.localizedDescription);
+        
+        flutterResult([FlutterError errorWithCode:@"set_custom_data_for_annotation" message:@"Failed to select annotations" details:@"Error: Failed to find annotation with unique id."]);
+        return;
+    }
+    
+    [documentController.pdfViewCtrl DocLockReadWithBlock:^(PTPDFDoc * _Nullable doc) {
+        int i;
+        NSString *key;
+        for (i = 0; i < [fieldNames count]; i++) {
+            if (i % 2) {
+                NSString *value = [fieldNames objectAtIndex:i];
+                [annot SetCustomData:key value:value];
+            } else {
+                key = [fieldNames objectAtIndex:i];
+            }
+        }
+    } error:&error];
+    
+    if (error) {
+        NSLog(@"Error: Failed to set custom data. %@", error.localizedDescription);
+        flutterResult([FlutterError errorWithCode:@"set_custom_data_for_annotation" message:@"Failed to select annotations" details:@"Error: Failed to select annotation from doc."]);
+    } else {
+        flutterResult(nil);
+    }
+}
+
+- (void)isBauhubToolMode:(FlutterResult)flutterResult
+{
+    PTDocumentController *documentController = [self getDocumentController];
+    if(documentController.document == Nil)
+    {
+        // something is wrong, no document.
+        NSLog(@"Error: The document view controller has no document.");
+        flutterResult([FlutterError errorWithCode:@"get_tool_mode" message:@"Failed to get toolmode" details:@"Error: The document view controller has no document."]);
+        return;
+    }
+
+    PTTool *tool = documentController.toolManager.tool;
+    if ([tool isKindOfClass:[BauhubTaskTool class]]) {
+        flutterResult(@"true");
+    }
+    flutterResult(@"false");
 }
 
 + (PTAnnot *)findAnnotWithUniqueID:(NSString *)uniqueID onPageNumber:(int)pageNumber documentController:(PTDocumentController *)documentController error:(NSError **)error
@@ -980,7 +1069,16 @@
         [self presentTabbedDocumentViewController];
     }
     
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willHideEditMenu:) name:UIMenuControllerDidHideMenuNotification object:nil];
+
     ((PTFlutterDocumentController*)self.tabbedDocumentViewController.childViewControllers.lastObject).openResult = flutterResult;
+}
+
+- (void) willHideEditMenu:(NSNotification *) notification
+{
+    if ([[notification name] isEqualToString:UIMenuControllerDidHideMenuNotification]) {
+        [self documentController:[self getDocumentController] willHideEditMenu:nil];
+    }
 }
 
 - (void)importAnnotations:(NSString *)xfdf resultToken:(FlutterResult)flutterResult
@@ -1532,7 +1630,10 @@
         toolClass = [PTFreeHandHighlightCreate class];
     } else if ([toolMode isEqualToString:PTAnnotationCreateRubberStampToolKey]) {
         toolClass = [PTRubberStampCreate class];
-
+    } else if ([toolMode containsString:@"BauhubTaskTool"]) {
+        toolClass = [BauhubTaskTool class];
+    } else {
+        toolClass = [PTPanTool class];
     }
 
     if (toolClass) {
@@ -1543,6 +1644,11 @@
         if ([tool isKindOfClass:[PTFreeHandCreate class]]
             && ![tool isKindOfClass:[PTFreeHandHighlightCreate class]]) {
             ((PTFreeHandCreate *)tool).multistrokeMode = YES;
+        }
+        
+        if ([tool isKindOfClass:[BauhubTaskTool class]]) {
+            NSString *colorCode = [toolMode substringFromIndex: [toolMode length] - 6];
+            [((BauhubTaskTool *)tool) setTaskImageName:[NSString stringWithFormat:@"%@%@", @"task_", colorCode]];
         }
     }
 
@@ -1842,6 +1948,220 @@
     }
     
     return Nil;
+}
+
+@end
+
+#pragma mark - BauhubTaskTool
+@interface BauhubTaskTool () <UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIDocumentPickerDelegate>
+
+@property (nonatomic, strong, nullable) UIImage *image;
+@property (nonatomic, strong, nullable) PTPDFPoint *touchPtPage;
+@property (nonatomic, assign) BOOL isPencilTouch;
+
+@end
+
+@implementation BauhubTaskTool
+
+@dynamic isPencilTouch;
+
+- (Class)annotClass
+{
+    return [PTRubberStamp class];
+}
+
++ (PTExtendedAnnotType)annotType
+{
+    return PTExtendedAnnotTypeImageStamp;
+}
+
+- (BOOL)pdfViewCtrl:(PTPDFViewCtrl *)pdfViewCtrl onTouchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    return YES;
+}
+
+- (BOOL)pdfViewCtrl:(PTPDFViewCtrl *)pdfViewCtrl onTouchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    return YES;
+}
+
+- (BOOL)pdfViewCtrl:(PTPDFViewCtrl *)pdfViewCtrl onTouchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    return YES;
+}
+
+- (BOOL)pdfViewCtrl:(PTPDFViewCtrl *)pdfViewCtrl handleTap:(UITapGestureRecognizer *)gestureRecognizer
+{
+
+    if( !(self.isPencilTouch == YES || self.toolManager.annotationsCreatedWithPencilOnly == NO) )
+    {
+        return YES;
+    }
+
+    CGPoint touchPoint = [gestureRecognizer locationInView:self.pdfViewCtrl];
+
+    int pageNumber = [self.pdfViewCtrl GetPageNumberFromScreenPt:touchPoint.x y:touchPoint.y];
+    if (pageNumber < 1) {
+        return YES;
+    }
+    // Save page number for touch point.
+    _pageNumber = pageNumber;
+    self.endPoint = touchPoint;
+    self.touchPtPage = [self.pdfViewCtrl ConvScreenPtToPagePt:[[PTPDFPoint alloc] initWithPx:self.endPoint.x py:self.endPoint.y] page_num:_pageNumber];
+
+    UIImage *rawImage = [UIImage imageNamed:self.taskImageName];
+    
+    if (rawImage) {
+        self.image = [self correctForRotation:rawImage];
+        [self createImageStamp];
+    } else {
+        UIImage *defaultImage = [UIImage imageNamed:@"task_111111"];
+        if (defaultImage) {
+            self.image = [self correctForRotation:defaultImage];
+            [self createImageStamp];
+        }
+    }
+
+    // Tap handled.
+    return YES;
+}
+
+-(void)createImageStamp
+{
+    BOOL hasWriteLock = NO;
+
+    @try {
+        [self.pdfViewCtrl DocLock:YES];
+        hasWriteLock = YES;
+
+        PTPDFDoc *doc = [self.pdfViewCtrl GetDoc];
+        
+        PTPage* page = [doc GetPage:self.pageNumber];
+        PTPDFRect* stampRect = [[PTPDFRect alloc] initWithX1:0 y1:0 x2:self.image.size.width y2:self.image.size.height];
+        double maxWidth = 50.0;
+        double maxHeight = 50.0;
+
+        PTRotate ctrlRotation = [self.pdfViewCtrl GetRotation];
+        PTRotate pageRotation = [page GetRotation];
+        PTRotate viewRotation = ((pageRotation + ctrlRotation) % 4);
+
+        PTPDFRect* pageCropBox = [page GetCropBox];
+
+        if ([pageCropBox Width] < maxWidth)
+        {
+            maxWidth = [pageCropBox Width];
+        }
+        if ([pageCropBox Height] < maxHeight)
+        {
+            maxHeight = [pageCropBox Height];
+        }
+
+        if (viewRotation == e_pt90 || viewRotation == e_pt270) {
+            // Swap width and height if visible page is rotated 90 or 270 degrees
+            maxWidth = maxWidth + maxHeight;
+            maxHeight = maxWidth - maxHeight;
+            maxWidth = maxWidth - maxHeight;
+        }
+
+        CGFloat scaleFactor = MIN(maxWidth / [stampRect Width], maxHeight / [stampRect Height]);
+        CGFloat stampWidth = [stampRect Width] * scaleFactor;
+        CGFloat stampHeight = [stampRect Height] * scaleFactor;
+
+        if (ctrlRotation == e_pt90 || ctrlRotation == e_pt270) {
+            // Swap width and height if pdfViewCtrl is rotated 90 or 270 degrees
+            stampWidth = stampWidth + stampHeight;
+            stampHeight = stampWidth - stampHeight;
+            stampWidth = stampWidth - stampHeight;
+        }
+
+        PTStamper* stamper = [[PTStamper alloc] initWithSize_type:e_ptabsolute_size a:stampWidth b:stampHeight];
+        [stamper SetAlignment:e_pthorizontal_left vertical_alignment:e_ptvertical_bottom];
+        [stamper SetAsAnnotation:YES];
+
+        // Account for page rotation in the page-space touch point
+        PTMatrix2D *mtx = [page GetDefaultMatrix:NO box_type:e_ptcrop angle:0];
+        self.touchPtPage = [mtx Mult:self.touchPtPage];
+
+        CGFloat xPos = [self.touchPtPage getX] - (stampWidth / 2);
+        CGFloat yPos = [self.touchPtPage getY] - (stampHeight / 2);
+
+        double pageWidth = [[page GetCropBox] Width];
+        if (xPos > pageWidth - stampWidth)
+        {
+            xPos = pageWidth - stampWidth;
+        }
+        if (xPos < 0)
+        {
+            xPos = 0;
+        }
+        double pageHeight = [[page GetCropBox] Height];
+        if (yPos > pageHeight - stampHeight)
+        {
+            yPos = pageHeight - stampHeight;
+        }
+        if (yPos < 0)
+        {
+            yPos = 0;
+        }
+
+        [stamper SetPosition:xPos vertical_distance:yPos use_percentage:NO];
+
+        PTPageSet* pageSet = [[PTPageSet alloc] initWithOne_page:self.pageNumber];
+
+        NSData* data = UIImagePNGRepresentation(self.image);
+
+        PTObjSet* hintSet = [[PTObjSet alloc] init];
+        PTObj* encoderHints = [hintSet CreateArray];
+        [encoderHints PushBackName:@"JPEG"];
+
+        PTImage* stampImage = [PTImage CreateWithDataSimple:[doc GetSDFDoc] buf:data buf_size:data.length encoder_hints:encoderHints];
+
+        // Rotate stamp based on the pdfViewCtrl's rotation
+        PTRotate stampRotation = (4 - ctrlRotation) % 4; // 0 = 0, 90 = 1; 180 = 2, and 270 = 3
+        [stamper SetRotation:stampRotation * 90.0];
+        [stamper StampImage:doc src_img:stampImage dest_pages:pageSet];
+
+        int numAnnots = [page GetNumAnnots];
+
+        assert(numAnnots > 0);
+
+        PTAnnot* annot = [page GetAnnot:numAnnots - 1];
+        PTObj* obj = [annot GetSDFObj];
+        [obj PutString:PTImageStampAnnotationIdentifier value:@""];
+        [obj PutNumber:PTImageStampAnnotationRotationDegreeIdentifier value:0.0];
+
+        // Set up to transfer to PTAnnotEditTool
+        self.currentAnnotation = annot;
+        [self.currentAnnotation RefreshAppearance];
+
+        self.annotationPageNumber = self.pageNumber;
+
+        [self.pdfViewCtrl UpdateWithAnnot:annot page_num:self.pageNumber];
+
+    } @catch (NSException *exception) {
+        NSLog(@"Exception: %@, %@", exception.name, exception.reason);
+    } @finally {
+        if (hasWriteLock) {
+            [self.pdfViewCtrl DocUnlock];
+        }
+    }
+
+    if (self.currentAnnotation && self.annotationPageNumber > 0) {
+        [self annotationAdded:self.currentAnnotation onPageNumber:self.annotationPageNumber];
+    }
+}
+
+-(UIImage*)correctForRotation:(UIImage*)src
+{
+    UIGraphicsBeginImageContext(src.size);
+
+    [src drawAtPoint:CGPointMake(0, 0)];
+
+    UIImage* img =  UIGraphicsGetImageFromCurrentImageContext();
+
+    UIGraphicsEndImageContext();
+
+    return img;
 }
 
 @end

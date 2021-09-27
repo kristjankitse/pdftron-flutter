@@ -24,6 +24,8 @@ class Functions {
   static const setFlagForFields = "setFlagForFields";
   static const setLeadingNavButtonIcon = "setLeadingNavButtonIcon";
   static const closeAllTabs = "closeAllTabs";
+  static const setCustomDataForAnnotation = "setCustomDataForAnnotation";
+  static const isBauhubToolMode = "isBauhubToolMode";
 }
 
 // Parameters define the parameters of the functions

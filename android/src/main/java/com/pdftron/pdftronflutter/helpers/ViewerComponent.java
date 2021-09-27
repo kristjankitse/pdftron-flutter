@@ -39,6 +39,8 @@ public interface ViewerComponent {
 
     EventChannel.EventSink getZoomChangedEventEmitter();
 
+    EventChannel.EventSink getWillHideEditMenuEventEmitter();
+
     MethodChannel.Result getFlutterLoadResult();
 
     HashMap<Annot, Integer> getSelectedAnnots();

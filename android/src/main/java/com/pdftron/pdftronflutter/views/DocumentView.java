@@ -2,6 +2,7 @@ package com.pdftron.pdftronflutter.views;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
@@ -17,24 +18,31 @@ import com.pdftron.pdf.config.ViewerBuilder2;
 import com.pdftron.pdf.config.ViewerConfig;
 import com.pdftron.pdf.controls.PdfViewCtrlTabFragment2;
 import com.pdftron.pdf.controls.PdfViewCtrlTabHostFragment2;
+import com.pdftron.pdf.tools.QuickMenu;
+import com.pdftron.pdf.tools.QuickMenuItem;
 import com.pdftron.pdf.tools.ToolManager;
 import com.pdftron.pdf.utils.PdfViewCtrlSettingsManager;
 import com.pdftron.pdf.utils.Utils;
+import com.pdftron.pdftronflutter.bauhub.BauhubTaskTool;
 import com.pdftron.pdftronflutter.helpers.PluginUtils;
 import com.pdftron.pdftronflutter.helpers.ViewerComponent;
 import com.pdftron.pdftronflutter.helpers.ViewerImpl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodChannel;
 
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.handleDocumentLoaded;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.handleLeadingNavButtonPressed;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.handleWillHideEditMenu;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.handleOnDetach;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.handleOpenDocError;
 
 public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 implements ViewerComponent {
+    private ViewerComponent _this = this;
     private ViewerImpl mImpl = new ViewerImpl(this);
 
     private ToolManagerBuilder mToolManagerBuilder;
@@ -52,6 +60,7 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     private EventChannel.EventSink sLeadingNavButtonPressedEventEmitter;
     private EventChannel.EventSink sPageChangedEventEmitter;
     private EventChannel.EventSink sZoomChangedEventEmitter;
+    private EventChannel.EventSink sWillHideEditMenuEventEmitter;
     private MethodChannel.Result sFlutterLoadResult;
 
     private HashMap<Annot, Integer> mSelectedAnnots;
@@ -81,6 +90,8 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     public void openDocument(String document, String password, String configStr, MethodChannel.Result result) {
 
         PluginUtils.ConfigInfo configInfo = PluginUtils.handleOpenDocument(mBuilder, mToolManagerBuilder, mPDFViewCtrlConfig, document, getContext(), configStr);
+
+        mToolManagerBuilder.addCustomizedTool(BauhubTaskTool.MODE, BauhubTaskTool.class);
 
         setDocumentUri(configInfo.getFileUri());
         setPassword(password);
@@ -198,7 +209,54 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     public void onTabDocumentLoaded(String tag) {
         super.onTabDocumentLoaded(tag);
 
+        setCustomQuickMenuListener();
         handleDocumentLoaded(this);
+    }
+
+    private void setCustomQuickMenuListener() {
+        mPdfViewCtrlTabHostFragment.getCurrentPdfViewCtrlFragment().addQuickMenuListener(new ToolManager.QuickMenuListener() {
+            @Override
+            public boolean onQuickMenuClicked(QuickMenuItem quickMenuItem) {
+                return false;
+            }
+
+            @Override
+            public boolean onShowQuickMenu(QuickMenu quickMenu, Annot annot) {
+                try {
+                    if (annot != null && quickMenu != null) {
+                        ArrayList<QuickMenuItem> items = new ArrayList<>();
+                        items.addAll(quickMenu.getFirstRowMenuItems());
+                        items.addAll(quickMenu.getSecondRowMenuItems());
+                        items.addAll(quickMenu.getOverflowMenuItems());
+                        ArrayList<QuickMenuItem> removableItems = new ArrayList<>();
+
+                        for (QuickMenuItem item : items) {
+                            if (Objects.equals(item.toString(), "Flatten")) {
+                                removableItems.add(item);
+                            }
+                            if (annot.getType() == 12) {
+                                if (Objects.equals(item.toString(), "Add Comment") || Objects.equals(item.toString(), "Copy") || Objects.equals(item.toString(), "Crop")) {
+                                    removableItems.add(item);
+                                }
+                            }
+                        }
+                        quickMenu.removeMenuEntries(removableItems);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                return false;
+            }
+
+            @Override
+            public void onQuickMenuShown() { }
+
+            @Override
+            public void onQuickMenuDismissed() {
+                // TODO: Siia saaks panna taski nupu ära kaotamise
+                handleWillHideEditMenu(_this);
+            }
+        });
     }
 
     @Override
@@ -269,6 +327,10 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
         sZoomChangedEventEmitter = emitter;
     }
 
+    public void setWillHideEditMenuEventEmitter(EventChannel.EventSink emitter) {
+        sWillHideEditMenuEventEmitter = emitter;
+    }
+
     public void setFlutterLoadResult(MethodChannel.Result result) {
         sFlutterLoadResult = result;
     }
@@ -325,6 +387,11 @@ public class DocumentView extends com.pdftron.pdf.controls.DocumentView2 impleme
     @Override
     public EventChannel.EventSink getZoomChangedEventEmitter() {
         return sZoomChangedEventEmitter;
+    }
+
+    @Override
+    public EventChannel.EventSink getWillHideEditMenuEventEmitter() {
+        return sWillHideEditMenuEventEmitter;
     }
 
     @Override

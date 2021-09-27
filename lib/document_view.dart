@@ -148,4 +148,16 @@ class DocumentViewController {
   Future<void> closeAllTabs() {
     return _channel.invokeMethod(Functions.closeAllTabs);
   }
+
+  Future<Rect> setCustomDataForAnnotation(Annot annotation, List<String> fieldNames) async {
+    return _channel.invokeMethod(Functions.setCustomDataForAnnotation,
+        <String, dynamic>{Parameters.annotation: jsonEncode(annotation), Parameters.fieldNames: fieldNames});
+  }
+
+  Future<bool> isBauhubToolMode() async {
+    String result = await _channel.invokeMethod(Functions.isBauhubToolMode);
+    print(result);
+    return result == 'true';
+  }
+
 }

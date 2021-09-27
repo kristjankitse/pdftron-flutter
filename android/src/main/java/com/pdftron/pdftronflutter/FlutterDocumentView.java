@@ -25,6 +25,7 @@ import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_FORM_FIELD_VA
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_LEADING_NAV_BUTTON_PRESSED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_PAGE_CHANGED;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_ZOOM_CHANGED;
+import static com.pdftron.pdftronflutter.helpers.PluginUtils.EVENT_WILL_HIDE_EDIT_MENU;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_OPEN_DOCUMENT;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.FUNCTION_SET_LEADING_NAV_BUTTON_ICON;
 import static com.pdftron.pdftronflutter.helpers.PluginUtils.KEY_LEADING_NAV_BUTTON_ICON;
@@ -180,6 +181,19 @@ public class FlutterDocumentView implements PlatformView, MethodChannel.MethodCa
             @Override
             public void onCancel(Object arguments) {
                 documentView.setZoomChangedEventEmitter(null);
+            }
+        });
+
+        final EventChannel willHideEditMenuEventChannel = new EventChannel(messenger, EVENT_WILL_HIDE_EDIT_MENU);
+        willHideEditMenuEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
+            @Override
+            public void onListen(Object arguments, EventChannel.EventSink emitter) {
+                documentView.setWillHideEditMenuEventEmitter(emitter);
+            }
+
+            @Override
+            public void onCancel(Object arguments) {
+                documentView.setWillHideEditMenuEventEmitter(null);
             }
         });
     }

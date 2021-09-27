@@ -15,6 +15,7 @@ const _leadingNavButtonPressedChannel =
     const EventChannel('leading_nav_button_pressed_event');
 const _pageChangedChannel = const EventChannel('page_changed_event');
 const _zoomChangedChannel = const EventChannel('zoom_changed_event');
+const _willHideEditMenuChannel = const EventChannel('will_hide_edit_menu_event');
 
 typedef void ExportAnnotationCommandListener(dynamic xfdfCommand);
 typedef void ExportBookmarkListener(dynamic bookmarkJson);
@@ -27,6 +28,7 @@ typedef void LeadingNavbuttonPressedlistener();
 typedef void PageChangedListener(
     dynamic previousPageNumber, dynamic pageNumber);
 typedef void ZoomChangedListener(dynamic zoom);
+typedef void WillHideEditMenuListener();
 typedef void CancelListener();
 
 enum eventSinkId {
@@ -40,6 +42,7 @@ enum eventSinkId {
   leadingNavButtonPressedId,
   pageChangedId,
   zoomChangedId,
+  willHideEditMenuId
 }
 
 CancelListener startExportAnnotationCommandListener(
@@ -175,6 +178,18 @@ CancelListener startZoomChangedListener(ZoomChangedListener listener) {
   var subscription = _zoomChangedChannel
       .receiveBroadcastStream(eventSinkId.zoomChangedId.index)
       .listen(listener, cancelOnError: true);
+
+  return () {
+    subscription.cancel();
+  };
+}
+
+CancelListener startWillHideEditMenuListener(WillHideEditMenuListener listener) {
+  var subscription = _willHideEditMenuChannel
+      .receiveBroadcastStream(eventSinkId.willHideEditMenuId.index)
+      .listen((stub) {
+    listener();
+  }, cancelOnError: true);
 
   return () {
     subscription.cancel();

@@ -34,6 +34,8 @@ import com.pdftron.pdf.widget.toolbar.builder.AnnotationToolbarBuilder;
 import com.pdftron.pdf.widget.toolbar.builder.ToolbarButtonType;
 import com.pdftron.pdf.widget.toolbar.component.DefaultToolbars;
 import com.pdftron.pdftronflutter.R;
+import com.pdftron.pdftronflutter.bauhub.BauhubTaskTool;
+import com.pdftron.sdf.Obj;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -124,6 +126,7 @@ public class PluginUtils {
     public static final String EVENT_LEADING_NAV_BUTTON_PRESSED = "leading_nav_button_pressed_event";
     public static final String EVENT_PAGE_CHANGED = "page_changed_event";
     public static final String EVENT_ZOOM_CHANGED = "zoom_changed_event";
+    public static final String EVENT_WILL_HIDE_EDIT_MENU = "will_hide_edit_menu_event";
 
     public static final String FUNCTION_GET_PLATFORM_VERSION = "getPlatformVersion";
     public static final String FUNCTION_GET_VERSION = "getVersion";
@@ -147,6 +150,8 @@ public class PluginUtils {
     public static final String FUNCTION_SET_FLAGS_FOR_ANNOTATIONS = "setFlagsForAnnotations";
     public static final String FUNCTION_SET_LEADING_NAV_BUTTON_ICON = "setLeadingNavButtonIcon";
     public static final String FUNCTION_CLOSE_ALL_TABS = "closeAllTabs";
+    public static final String FUNCTION_SET_CUSTOM_DATA_FOR_ANNOTATION = "setCustomDataForAnnotation";
+    public static final String FUNCTION_IS_BAUHUB_TOOL_MODE = "isBauhubToolMode";
 
     public static final String BUTTON_TOOLS = "toolsButton";
     public static final String BUTTON_SEARCH = "searchButton";
@@ -298,6 +303,7 @@ public class PluginUtils {
                                                 @NonNull PDFViewCtrlConfig pdfViewCtrlConfig, @NonNull String document, @NonNull Context context,
                                                 String configStr) {
 
+        builder.initialToolbarTag(DefaultToolbars.TAG_VIEW_TOOLBAR);
         ConfigInfo configInfo = new ConfigInfo();
 
         toolManagerBuilder.setOpenToolbar(true);
@@ -609,6 +615,8 @@ public class PluginUtils {
             mode = ToolManager.ToolMode.RUBBER_STAMPER;
         } else if (TOOL_ERASER.equals(item)) {
             mode = ToolManager.ToolMode.INK_ERASER;
+        } else {
+            mode = ToolManager.ToolMode.PAN;
         }
         return mode;
     }
@@ -815,6 +823,7 @@ public class PluginUtils {
     }
 
     public static void onMethodCall(MethodCall call, MethodChannel.Result result, ViewerComponent component) {
+        System.out.println(call.method);
         switch (call.method) {
             case FUNCTION_IMPORT_ANNOTATIONS: {
                 checkFunctionPrecondition(component);
@@ -999,6 +1008,28 @@ public class PluginUtils {
             case FUNCTION_CLOSE_ALL_TABS: {
                 checkFunctionPrecondition(component);
                 closeAllTabs(result, component);
+                break;
+            }
+            case FUNCTION_SET_CUSTOM_DATA_FOR_ANNOTATION: {
+                checkFunctionPrecondition(component);
+                String annotation = call.argument(KEY_ANNOTATION);
+                ArrayList<String> fieldNames = call.argument(KEY_FIELD_NAMES);
+                if (annotation != null && fieldNames != null) {
+                    try {
+                        setCustomDataForAnnotation(annotation, fieldNames, result, component);
+                    } catch (JSONException ex) {
+                        ex.printStackTrace();
+                        result.error(Integer.toString(ex.hashCode()), "JSONException Error: " + ex, null);
+                    } catch (PDFNetException ex) {
+                        ex.printStackTrace();
+                        result.error(Long.toString(ex.getErrorCode()), "PDFTronException Error: " + ex, null);
+                    }
+                }
+                break;
+            }
+            case FUNCTION_IS_BAUHUB_TOOL_MODE: {
+                checkFunctionPrecondition(component);
+                isBauhubToolMode(result, component);
                 break;
             }
             default:
@@ -1505,6 +1536,16 @@ public class PluginUtils {
 
         ToolManager.ToolMode mode = convStringToToolMode(toolModeString);
         Tool tool = (Tool) toolManager.createTool(mode, null);
+
+        if (toolModeString.contains("BauhubTaskTool")) {
+            String colorCode = toolModeString.substring(toolModeString.length() - 6).toLowerCase();
+            String imageName = "task_" + colorCode;
+            int rawImageInt = context.getResources().getIdentifier("raw/" + imageName, null, context.getPackageName());
+
+            tool = (Tool) toolManager.createTool(BauhubTaskTool.MODE, toolManager.getTool());
+            ((BauhubTaskTool)tool).setImage(rawImageInt, imageName);
+        }
+
         boolean continuousAnnot = PdfViewCtrlSettingsManager.getContinuousAnnotationEdit(context);
         tool.setForceSameNextToolMode(continuousAnnot);
         toolManager.setTool(tool);
@@ -1520,6 +1561,78 @@ public class PluginUtils {
 
         pdfViewCtrlTabHostFragment.closeAllTabs();
         result.success(null);
+    }
+
+    private static void setCustomDataForAnnotation(String annotation, ArrayList<String> fieldNames, MethodChannel.Result result, ViewerComponent component) throws PDFNetException, JSONException {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        PDFDoc pdfDoc = component.getPdfDoc();
+
+        if (null == pdfViewCtrl || null == pdfDoc) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        JSONObject annotationJson = new JSONObject(annotation);
+
+        String annotationId = annotationJson.getString(KEY_ANNOTATION_ID);
+        int annotationPageNumber = annotationJson.getInt(KEY_PAGE_NUMBER);
+
+        boolean shouldUnlock = false;
+        try {
+            pdfViewCtrl.docLock(true);
+            shouldUnlock = true;
+
+            Annot annot = null;
+
+            if (!Utils.isNullOrEmpty(annotationId)) {
+                ArrayList<Annot> annotations = pdfViewCtrl.getAnnotationsOnPage(annotationPageNumber);
+                for (Annot ann : annotations) {
+                    String uniqueId = ann.getUniqueID().toString();
+                    if (uniqueId.equals(annotationId)) {
+                        annot = ann;
+                    }
+                }
+            }
+
+            int i;
+            String key = null;
+            for (i = 0; i < fieldNames.size(); i++) {
+                if ( i % 2 == 0 ) {
+                    String value = fieldNames.get(i);
+                    if (null != key && null != annot) {
+                        annot.setCustomData(key, value);
+                    }
+                }
+                else {
+                    key = fieldNames.get(i);
+                }
+            }
+        } finally {
+            if (shouldUnlock) {
+                pdfViewCtrl.docUnlock();
+            }
+        }
+        result.success(null);
+    }
+
+    private static void isBauhubToolMode(MethodChannel.Result result, ViewerComponent component) {
+        PDFDoc pdfDoc = component.getPdfDoc();
+        if (pdfDoc == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        ToolManager toolManager = component.getToolManager();
+        if (toolManager == null) {
+            result.error("InvalidState", "ToolManager not found", null);
+            return;
+        }
+
+        if (toolManager.getTool().getClass() == BauhubTaskTool.class) {
+            result.success("true");
+            return;
+        }
+        result.success("false");
     }
 
     // Events
@@ -1577,6 +1690,13 @@ public class PluginUtils {
         EventChannel.EventSink leadingNavButtonPressedEventSink = component.getLeadingNavButtonPressedEventEmitter();
         if (leadingNavButtonPressedEventSink != null) {
             leadingNavButtonPressedEventSink.success(null);
+        }
+    }
+
+    public static void handleWillHideEditMenu(ViewerComponent component) {
+        EventChannel.EventSink willHideEditMenuEventSink = component.getWillHideEditMenuEventEmitter();
+        if (willHideEditMenuEventSink != null) {
+            willHideEditMenuEventSink.success(null);
         }
     }
 

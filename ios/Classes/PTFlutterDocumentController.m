@@ -27,6 +27,10 @@
     self.thumbnailSliderEnabled = ![self isBottomToolbarHidden];
 }
 
+- (void)viewWillDisappear:(BOOL)animated{
+    [[NSNotificationCenter defaultCenter] removeObserver:self.plugin name:UIMenuControllerDidHideMenuNotification object:nil];
+}
+
 - (void)viewWillLayoutSubviews
 {
     [super viewWillLayoutSubviews];
@@ -163,6 +167,44 @@
 }
 
 #pragma mark - <PTToolManagerDelegate>
+
+// PTToolManagerDelegate method implementation.
+-(BOOL)toolManager:(PTToolManager *)toolManager shouldShowMenu:(UIMenuController *)menuController forAnnotation:(PTAnnot *)annotation onPageNumber:(unsigned long)pageNumber {
+    // Remove flatten button from menu
+    menuController.menuItems = [self removeAnnotationItems:menuController.menuItems];
+    // NSLog([annotation GetCustomData:@"taskId"]);
+
+    // Remove all buttons from BauhubTask
+    if (annotation.GetType == 12) {
+        menuController.menuItems = [self removeAnnotationItemsFromBauhubTask:menuController.menuItems];
+    }
+    
+    return YES;
+}
+
+- (NSArray<UIMenuItem *> *)removeAnnotationItems:(NSArray<UIMenuItem *> *)items {
+    NSArray<NSString *> *stringsToRemove = @[
+        PTLocalizedString(@"Flatten", nil),
+        PTLocalizedString(@"Crop", nil),
+    ];
+    
+    // Filter out menu items with titles matching specified strings.
+    return [items objectsAtIndexes:[items indexesOfObjectsPassingTest:^BOOL(UIMenuItem *menuItem, NSUInteger idx, BOOL *stop) {
+        return ![stringsToRemove containsObject:menuItem.title];
+    }]];
+}
+
+- (NSArray<UIMenuItem *> *)removeAnnotationItemsFromBauhubTask:(NSArray<UIMenuItem *> *)items {
+    NSArray<NSString *> *stringsToRemove = @[
+        PTLocalizedString(@"Note", nil),
+        PTLocalizedString(@"Copy", nil),
+    ];
+    
+    // Filter out menu items with titles matching specified strings.
+    return [items objectsAtIndexes:[items indexesOfObjectsPassingTest:^BOOL(UIMenuItem *menuItem, NSUInteger idx, BOOL *stop) {
+        return ![stringsToRemove containsObject:menuItem.title];
+    }]];
+}
 
 - (void)toolManagerToolChanged:(PTToolManager *)toolManager
 {
@@ -550,6 +592,8 @@
         }
     }
     
+    toolGroupManager.selectedGroup = toolGroupManager.viewItemGroup;
+
     if (self.annotationToolbarSwitcherHidden) {
         self.navigationItem.titleView = [[UIView alloc] init];
     } else {

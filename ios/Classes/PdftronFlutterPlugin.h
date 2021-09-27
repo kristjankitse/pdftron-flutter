@@ -103,6 +103,8 @@ static NSString * const PTSetFlagForFieldsKey = @"setFlagForFields";
 static NSString * const PTSetValuesForFieldsKey = @"setValuesForFields";
 static NSString * const PTSetLeadingNavButtonIconKey = @"setLeadingNavButtonIcon";
 static NSString * const PTCloseAllTabsKey = @"closeAllTabs";
+static NSString * const PTSetCustomDataForAnnotationKey = @"setCustomDataForAnnotation";
+static NSString * const PTIsBauhubToolModeKey = @"isBauhubToolMode";
 
 // argument
 static NSString * const PTDocumentArgumentKey = @"document";
@@ -135,6 +137,7 @@ static NSString * const PTFormFieldValueChangedEventKey = @"form_field_value_cha
 static NSString * const PTLeadingNavButtonPressedEventKey = @"leading_nav_button_pressed_event";
 static NSString * const PTPageChangedEventKey = @"page_changed_event";
 static NSString * const PTZoomChangedEventKey = @"zoom_changed_event";
+static NSString * const PTWillHideEditMenuEventKey = @"will_hide_edit_menu_event";
 
 // other keys
 static NSString * const PTX1Key = @"x1";
@@ -210,6 +213,7 @@ typedef enum {
     leadingNavButtonPressedId,
     pageChangedId,
     zoomChangedId,
+    willHideEditMenuId
 } EventSinkId;
 
 @interface PdftronFlutterPlugin : NSObject<FlutterPlugin, FlutterStreamHandler, FlutterPlatformView>
@@ -228,6 +232,7 @@ typedef enum {
 -(void)documentController:(PTDocumentController *)docVC leadingNavButtonClicked:(nullable NSString *)nav;
 -(void)documentController:(PTDocumentController *)docVC pageChanged:(NSString*)pageNumbersString;
 -(void)documentController:(PTDocumentController *)docVC zoomChanged:(NSNumber*)zoom;
+-(void)documentController:(PTDocumentController *)docVC willHideEditMenu:(nullable NSString *)nav;
 
 - (void)topLeftButtonPressed:(UIBarButtonItem *)barButtonItem;
 
@@ -237,6 +242,12 @@ typedef enum {
 + (NSString *)PT_idToJSONString:(id)infoId;
 + (id)PT_JSONStringToId:(NSString *)jsonString;
 + (Class)toolClassForKey:(NSString *)key;
+
+@end
+
+@interface BauhubTaskTool : PTCreateToolBase
+
+@property NSString *taskImageName;
 
 @end
 

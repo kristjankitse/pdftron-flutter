@@ -54,6 +54,7 @@ public class FlutterDocumentActivity extends DocumentActivity implements ViewerC
     private static AtomicReference<EventSink> sLeadingNavButtonPressedEventEmitter = new AtomicReference<>();
     private static AtomicReference<EventSink> sPageChangedEventEmitter = new AtomicReference<>();
     private static AtomicReference<EventSink> sZoomChangedEventEmitter = new AtomicReference<>();
+    private static AtomicReference<EventSink> sWillHideEditMenuEventEmitter = new AtomicReference<>();
 
     private static HashMap<Annot, Integer> mSelectedAnnots;
 
@@ -164,6 +165,10 @@ public class FlutterDocumentActivity extends DocumentActivity implements ViewerC
         sZoomChangedEventEmitter.set(emitter);
     }
 
+    public static void setWillHideEditMenuEventEmitter(EventSink emitter) {
+        sWillHideEditMenuEventEmitter.set(emitter);
+    }
+
     public static void setFlutterLoadResult(Result result) {
         sFlutterLoadResult.set(result);
     }
@@ -222,6 +227,11 @@ public class FlutterDocumentActivity extends DocumentActivity implements ViewerC
     }
 
     @Override
+    public EventSink getWillHideEditMenuEventEmitter() {
+        return sWillHideEditMenuEventEmitter.get();
+    }
+
+    @Override
     public Result getFlutterLoadResult() {
         return sFlutterLoadResult.getAndSet(null);
     }
@@ -254,6 +264,7 @@ public class FlutterDocumentActivity extends DocumentActivity implements ViewerC
         sLeadingNavButtonPressedEventEmitter.set(null);
         sPageChangedEventEmitter.set(null);
         sZoomChangedEventEmitter.set(null);
+        sWillHideEditMenuEventEmitter.set(null);
 
         detachActivity();
     }
