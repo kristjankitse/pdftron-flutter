@@ -2746,17 +2746,22 @@ public class PluginUtils {
             int i;
             String key = null;
             for (i = 0; i < fieldNames.size(); i++) {
-                if (i % 2 == 0) {
+                if ( i % 2 == 0 ) {
                     String value = fieldNames.get(i);
                     if (null != key && null != annot) {
                         annot.setCustomData(key, value);
                     }
-                } else {
+                }
+                else {
                     key = fieldNames.get(i);
                 }
             }
-            result.success(null);
+        } finally {
+            if (shouldUnlock) {
+                pdfViewCtrl.docUnlock();
+            }
         }
+        result.success(null);
     }
 
     private static void isBauhubToolMode(MethodChannel.Result result, ViewerComponent component){

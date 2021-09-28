@@ -351,7 +351,6 @@ static const PTAnnotationToolbarKey PTAnnotationToolbarKeyItems = @"items";
 
 typedef enum {
     exportAnnotationId = 0,
-    willHideEditMenuId,
     exportBookmarkId,
     documentLoadedId,
     documentErrorId,
@@ -364,6 +363,7 @@ typedef enum {
     leadingNavButtonPressedId,
     pageChangedId,
     zoomChangedId,
+    willHideEditMenuId,
     pageMovedId,
 } EventSinkId;
 

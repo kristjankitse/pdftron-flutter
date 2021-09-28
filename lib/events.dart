@@ -45,7 +45,6 @@ typedef void PageMovedListener(dynamic previousPageNumber, dynamic pageNumber);
 typedef void CancelListener();
 
 enum eventSinkId {
-  willHideEditMenuId,
   exportAnnotationId,
   exportBookmarkId,
   documentLoadedId,
@@ -59,6 +58,7 @@ enum eventSinkId {
   leadingNavButtonPressedId,
   pageChangedId,
   zoomChangedId,
+  willHideEditMenuId,
   pageMovedId,
 }
 
@@ -123,9 +123,7 @@ CancelListener startAnnotationChangedListener(
       .receiveBroadcastStream(eventSinkId.annotationChangedId.index)
       .listen((annotationsWithActionString) {
     dynamic annotationsWithAction = jsonDecode(annotationsWithActionString);
-    String action = annotationsWithAction[EventParameters.action];
-    List<dynamic> annotations =
-        annotationsWithAction[EventParameters.annotations];
+    List<dynamic> annotations = jsonDecode(annotationsWithAction[EventParameters.annotations]);
     List<Annot> annotList = new List<Annot>();
     for (dynamic annotation in annotations) {
       annotList.add(new Annot.fromJson(annotation));

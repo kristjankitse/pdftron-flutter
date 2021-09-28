@@ -180,6 +180,7 @@ public class FlutterDocumentActivity extends DocumentActivity implements ViewerC
 
     public static void setWillHideEditMenuEventEmitter(EventSink emitter) {
         sWillHideEditMenuEventEmitter.set(emitter);
+    }
 
     public static void setExportAnnotationCommandEventEmitter(EventSink emitter) {
         sExportAnnotationCommandEventEmitter.set(emitter);

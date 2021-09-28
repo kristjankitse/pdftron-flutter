@@ -906,9 +906,6 @@
     
     switch (sinkId)
     {
-        case willHideEditMenuId:
-            self.willHideEditMenuEventSink = events;
-            break;
         case exportAnnotationId:
             self.xfdfEventSink = events;
             break;
@@ -948,6 +945,9 @@
         case zoomChangedId:
             self.zoomChangedEventSink = events;
             break;
+        case willHideEditMenuId:
+            self.willHideEditMenuEventSink = events;
+            break;
         case pageMovedId:
             self.pageMovedEventSink = events;
             break;
@@ -962,9 +962,6 @@
     
     switch (sinkId)
     {
-        case willHideEditMenuId:
-            self.willHideEditMenuEventSink = nil;
-            break;
         case exportAnnotationId:
             self.xfdfEventSink = nil;
             break;
@@ -1003,6 +1000,9 @@
             break;
         case zoomChangedId:
             self.zoomChangedEventSink = nil;
+            break;
+        case willHideEditMenuId:
+            self.willHideEditMenuEventSink = nil;
             break;
         case pageMovedId:
             self.pageMovedEventSink = nil;
