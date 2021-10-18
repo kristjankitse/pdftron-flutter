@@ -1257,6 +1257,8 @@
         [self openLayersList:result];
     } else if ([call.method isEqualToString:PTOpenNavigationListsKey]) {
         [self openNavigationLists:result];
+    } else if ([call.method isEqualToString:PTGetCurrentPageKey]) {
+        [self getCurrentPage:result];
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -2295,6 +2297,11 @@
     flutterResult([NSNumber numberWithBool:[documentController.pdfViewCtrl GotoLastPage]]);
 }
 
+- (void)getCurrentPage:(FlutterResult)flutterResult {
+    PTDocumentController *documentController = [self getDocumentController];
+    flutterResult([NSNumber numberWithInt:documentController.pdfViewCtrl.currentPage]);
+}
+
 - (void)getDocumentPath:(FlutterResult)flutterResult {
     PTDocumentController *documentController = [self getDocumentController];
     flutterResult(documentController.coordinatedDocument.fileURL.path);
@@ -2547,12 +2554,12 @@
 - (void)openAnnotationList:(FlutterResult)flutterResult
 {
     PTDocumentController *documentController = [self getDocumentController];
-    
     if (!documentController.annotationListHidden) {
         PTNavigationListsViewController *navigationListsViewController = documentController.navigationListsViewController;
-        navigationListsViewController.selectedViewController = navigationListsViewController.annotationViewController;
-        
-        [documentController presentViewController:navigationListsViewController animated:YES completion:nil];
+        if (navigationListsViewController) {
+            navigationListsViewController.selectedViewController = navigationListsViewController.annotationViewController;
+            [documentController showNavigationLists];
+        }
     }
     
     flutterResult(nil);
@@ -2561,11 +2568,12 @@
 - (void)openBookmarkList:(FlutterResult)flutterResult
 {
     PTDocumentController *documentController = [self getDocumentController];
-    
     if (!documentController.bookmarkListHidden) {
         PTNavigationListsViewController *navigationListsViewController = documentController.navigationListsViewController;
-        navigationListsViewController.selectedViewController = navigationListsViewController.bookmarkViewController;
-        [documentController presentViewController:navigationListsViewController animated:YES completion:nil];
+        if (navigationListsViewController) {
+            navigationListsViewController.selectedViewController = navigationListsViewController.bookmarkViewController;
+            [documentController showNavigationLists];
+        }
     }
     
     flutterResult(nil);
@@ -2574,12 +2582,15 @@
 - (void)openOutlineList:(FlutterResult)flutterResult
 {
     PTDocumentController *documentController = [self getDocumentController];
-    
     if (!documentController.outlineListHidden) {
         PTNavigationListsViewController *navigationListsViewController = documentController.navigationListsViewController;
-        navigationListsViewController.selectedViewController = navigationListsViewController.outlineViewController;
-        [documentController presentViewController:navigationListsViewController animated:YES completion:nil];
+        if (navigationListsViewController) {
+            navigationListsViewController.selectedViewController = navigationListsViewController.outlineViewController;
+            [documentController showNavigationLists];
+        }
     }
+    
+    
     
     flutterResult(nil);
 }
@@ -2587,11 +2598,12 @@
 - (void)openLayersList:(FlutterResult)flutterResult
 {
     PTDocumentController *documentController = [self getDocumentController];
-    
     if (!documentController.pdfLayerListHidden) {
         PTNavigationListsViewController *navigationListsViewController = documentController.navigationListsViewController;
-        navigationListsViewController.selectedViewController = navigationListsViewController.pdfLayerViewController;
-        [documentController presentViewController:navigationListsViewController animated:YES completion:nil];
+        if (navigationListsViewController) {
+            navigationListsViewController.selectedViewController = navigationListsViewController.pdfLayerViewController;
+            [documentController showNavigationLists];
+        }
     }
     
     flutterResult(nil);

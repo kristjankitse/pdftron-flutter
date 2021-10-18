@@ -6,6 +6,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 
 part 'options.dart';
 part 'document_view.dart';
@@ -216,5 +219,9 @@ class PdftronFlutter {
 
   static Future<bool> gotoLastPage() {
     return _channel.invokeMethod(Functions.gotoLastPage);
+  }
+
+  static Future<int> getCurrentPage() {
+    return _channel.invokeMethod(Functions.getCurrentPage);
   }
 }

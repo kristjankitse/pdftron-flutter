@@ -120,7 +120,7 @@ class _ViewerState extends State<Viewer> {
 
     // An event listener for when local annotation changes are committed to the document.
     // xfdfCommand is the XFDF Command of the annotation that was last changed.
-    var annotCancel = startExportAnnotationCommandListener((xfdfCommand) {
+    var annotCancel = startExportAnnotationCommandListener((xfdfCommand) async {
       String command = xfdfCommand;
       print("flutter xfdfCommand:\n");
       // Dart limits how many characters are printed onto the console. 
@@ -135,7 +135,7 @@ class _ViewerState extends State<Viewer> {
         }
         print(command.substring(start));
       } else {
-        print("flutter xfdfCommand:\n $command");
+        print(command);
       }
     });
 
@@ -156,6 +156,16 @@ class _ViewerState extends State<Viewer> {
 
   @override
   Widget build(BuildContext context) {
+    // If using Android Widget, uncomment one of the following:
+    // If using Flutter v2.3.0-17.0.pre or earlier.
+    // SystemChrome.setEnabledSystemUIOverlays(
+    //   SystemUiOverlay.values
+    // );
+    // If using later Flutter versions.
+    // SystemChrome.setEnabledSystemUIMode(
+    //   SystemUiMode.edgeToEdge,
+    // );
+    
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -163,9 +173,10 @@ class _ViewerState extends State<Viewer> {
         child:
             // Uncomment this to use Widget version of the viewer.
             // _showViewer
-            // ? DocumentView(
+            // ? SafeArea (
+            //   child: DocumentView(
             //     onCreated: _onDocumentViewCreated,
-            //   ):
+            //   )):
             Container(),
       ),
     );

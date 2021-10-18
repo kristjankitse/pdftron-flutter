@@ -201,6 +201,7 @@ static NSString * const PTOpenBookmarkListKey = @"openBookmarkList";
 static NSString * const PTOpenOutlineListKey = @"openOutlineList";
 static NSString * const PTOpenLayersListKey = @"openLayersList";
 static NSString * const PTOpenNavigationListsKey = @"openNavigationLists";
+static NSString * const PTGetCurrentPageKey = @"getCurrentPage";
 
 // argument
 static NSString * const PTDocumentArgumentKey = @"document";
