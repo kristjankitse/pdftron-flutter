@@ -48,7 +48,7 @@ public class PluginMethodCallHandler implements MethodCallHandler {
     public PluginMethodCallHandler(BinaryMessenger messenger, Context context) {
         mContext = context;
 
-        final EventChannel willHideEditMenuEventChannel = new EventChannel(registrar.messenger(), EVENT_WILL_HIDE_EDIT_MENU);
+        final EventChannel willHideEditMenuEventChannel = new EventChannel(messenger, EVENT_WILL_HIDE_EDIT_MENU);
         willHideEditMenuEventChannel.setStreamHandler(new EventChannel.StreamHandler() {
             @Override
             public void onListen(Object arguments, EventChannel.EventSink emitter) {
