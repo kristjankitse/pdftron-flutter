@@ -159,6 +159,22 @@ class DocumentViewController {
     return _channel.invokeMethod(Functions.handleBackButton);
   }
 
+  Future<void> undo() {
+    return _channel.invokeMethod(Functions.undo);
+  }
+  
+  Future<void> redo() {
+    return _channel.invokeMethod(Functions.redo);
+  }
+
+  Future<bool> canUndo() {
+    return _channel.invokeMethod(Functions.canUndo);
+  }
+  
+  Future<bool> canRedo() {
+    return _channel.invokeMethod(Functions.canRedo);
+  }
+
   Future<Rect> getPageCropBox(int pageNumber) async {
     String cropBoxString = await _channel.invokeMethod(Functions.getPageCropBox,
         <String, dynamic>{Parameters.pageNumber: pageNumber});
@@ -169,6 +185,14 @@ class DocumentViewController {
     int pageRotation = await _channel.invokeMethod(Functions.getPageRotation,
         <String, dynamic>{Parameters.pageNumber: pageNumber});
     return pageRotation;
+  }
+
+  Future<void> rotateClockwise() {
+    return _channel.invokeMethod(Functions.rotateClockwise);
+  }
+
+  Future<void> rotateCounterClockwise() {
+    return _channel.invokeMethod(Functions.rotateCounterClockwise);
   }
 
   Future<bool> setCurrentPage(int pageNumber) {
@@ -210,6 +234,14 @@ class DocumentViewController {
 
   Future<void> deleteAllAnnotations() {
     return _channel.invokeMethod(Functions.deleteAllAnnotations);
+  }
+
+  Future<String> exportAsImage(int pageNumber, int dpi, String exportFormat) {
+    return _channel.invokeMethod(Functions.exportAsImage, <String, dynamic>{
+      Parameters.pageNumber: pageNumber,
+      Parameters.dpi: dpi,
+      Parameters.exportFormat: exportFormat
+    });
   }
 
   Future<void> openAnnotationList() {

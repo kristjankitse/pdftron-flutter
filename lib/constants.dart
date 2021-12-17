@@ -22,8 +22,14 @@ class Functions {
   static const commitTool = "commitTool";
   static const getPageCount = "getPageCount";
   static const handleBackButton = "handleBackButton";
+  static const undo = "undo";
+  static const redo = "redo";
+  static const canUndo = "canUndo";
+  static const canRedo = "canRedo";
   static const getPageCropBox = "getPageCropBox";
   static const getPageRotation = "getPageRotation";
+  static const rotateClockwise = "rotateClockwise";
+  static const rotateCounterClockwise = "rotateCounterClockwise";
   static const setCurrentPage = "setCurrentPage";
   static const getDocumentPath = "getDocumentPath";
   static const setToolMode = "setToolMode";
@@ -32,6 +38,8 @@ class Functions {
   static const setLeadingNavButtonIcon = "setLeadingNavButtonIcon";
   static const closeAllTabs = "closeAllTabs";
   static const deleteAllAnnotations = "deleteAllAnnotations";
+  static const exportAsImage = "exportAsImage";
+  static const exportAsImageFromFilePath = "exportAsImageFromFilePath";
   static const openAnnotationList = "openAnnotationList";
   static const setRequestedOrientation = "setRequestedOrientation";
   static const gotoPreviousPage = "gotoPreviousPage";
@@ -68,6 +76,9 @@ class Parameters {
   static const annotationsWithFlags = "annotationsWithFlags";
   static const annotationProperties = "annotationProperties";
   static const leadingNavButtonIcon = "leadingNavButtonIcon";
+  static const path = "path";
+  static const exportFormat = "exportFormat";
+  static const dpi = "dpi";
   static const requestedOrientation = "requestedOrientation";
 }
 
@@ -111,6 +122,8 @@ class Buttons {
   static const listsButton = 'listsButton';
   static const thumbnailSlider = 'thumbnailSlider';
   static const saveCopyButton = 'saveCopyButton';
+  static const saveIdenticalCopyButton = 'saveIdenticalCopyButton';
+  static const saveFlattenedCopyButton = 'saveFlattenedCopyButton';
   static const editPagesButton = 'editPagesButton';
   static const printButton = 'printButton';
   static const closeButton = 'closeButton';
@@ -119,6 +132,8 @@ class Buttons {
   static const outlineListButton = 'outlineListButton';
   static const annotationListButton = 'annotationListButton';
   static const userBookmarkListButton = 'userBookmarkListButton';
+  static const viewLayersButton = 'viewLayersButton';
+  static const editToolButton = 'editToolButton';
   static const reflowModeButton = 'reflowModeButton';
   static const editMenuButton = 'editMenuButton';
   static const cropPageButton = 'cropPageButton';
@@ -129,6 +144,9 @@ class Buttons {
 
   // Android only
   static const editAnnotationToolbarButton = 'editAnnotationToolButton';
+  static const saveReducedCopyButton = 'saveReducedCopyButton';
+  static const saveCroppedCopyButton = 'saveCroppedCopyButton';
+  static const savePasswordCopyButton = 'savePasswordCopyButton';
 }
 
 // Tools define the various kinds of tools for the viewer
@@ -137,6 +155,7 @@ class Tools {
   static const textSelect = 'TextSelect';
   static const annotationCreateSticky = 'AnnotationCreateSticky';
   static const annotationCreateFreeHand = 'AnnotationCreateFreeHand';
+  static const multiSelect = 'MultiSelect';
   static const annotationCreateTextHighlight = 'AnnotationCreateTextHighlight';
   static const annotationCreateTextUnderline = 'AnnotationCreateTextUnderline';
   static const annotationCreateTextSquiggly = 'AnnotationCreateTextSquiggly';
@@ -302,6 +321,11 @@ class ToolbarIcons {
   static const favorite = "PDFTron_Favorite";
 }
 
+  class ExportFormat {
+    static const BMP = "BMP";
+    static const JPEG =  "JPEG";
+    static const PNG = "PNG";
+  }
 // PTOrientation defines the screen orientations for the viewer. Android only.
 class PTOrientation {
   static const unspecified = -1;
@@ -322,8 +346,25 @@ class ViewModePickerItem {
   static const ColorMode = "viewModeColorMode";
 }
 
+// DefaultEraserType defines the default behaviour of the eraser tool.
 class DefaultEraserType {
   static const annotationEraser = "annotationEraser";
   static const hybrideEraser = "hybrideEraser";
-  static const inkEraser = "inkEraser";
+  static const inkEraser = "inkEraser"; // Android only
+}
+
+// ReflowOrientation defines the scrolling direction of the viewer while in reflow mode. Android only.
+class ReflowOrientation {
+  static const horizontal = "horizontal";
+  static const vertical = "vertical";
+}
+
+class AnnotationManagerEditMode {
+  static const Own = "editModeOwn";
+  static const All = "editModeAll";
+}
+
+class AnnotationManagerUndoMode {
+  static const Own = "undoModeOwn";
+  static const All = "unodModeAll";
 }

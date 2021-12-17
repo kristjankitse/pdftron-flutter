@@ -124,7 +124,10 @@ CancelListener startAnnotationChangedListener(
       .listen((annotationsWithActionString) {
     dynamic annotationsWithAction = jsonDecode(annotationsWithActionString);
     String action = annotationsWithAction[EventParameters.action];
-    List<dynamic> annotations = jsonDecode(annotationsWithAction[EventParameters.annotations]);
+
+    List<dynamic> annotations = Platform.isIOS ? 
+        jsonDecode(annotationsWithAction[EventParameters.annotations]) :
+        annotationsWithAction[EventParameters.annotations];
     List<Annot> annotList = new List<Annot>();
     for (dynamic annotation in annotations) {
       annotList.add(new Annot.fromJson(annotation));
