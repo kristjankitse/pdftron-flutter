@@ -3093,7 +3093,7 @@ public class PluginUtils {
 
         if (toolModeString.contains("BauhubTaskTool")) {
             String colorCode = toolModeString.substring(toolModeString.length() - 6).toLowerCase();
-            String imageName = "task_" + colorCode;
+            String imageName = "task_fddd00";
             int rawImageInt = context.getResources().getIdentifier("raw/" + imageName, null, context.getPackageName());
 
             tool = (Tool) toolManager.createTool(BauhubTaskTool.MODE, toolManager.getTool());
