@@ -3191,7 +3191,7 @@
         self.image = [self correctForRotation:rawImage];
         [self createImageStamp];
     } else {
-        UIImage *defaultImage = [UIImage imageNamed:@"task_111111"];
+        UIImage *defaultImage = [UIImage imageNamed:@"task_FFEBFD"];
         if (defaultImage) {
             self.image = [self correctForRotation:defaultImage];
             [self createImageStamp];
