@@ -2705,7 +2705,7 @@
         
         if ([tool isKindOfClass:[BauhubTaskTool class]]) {
             NSString *colorCode = [toolMode substringFromIndex: [toolMode length] - 6];
-            [((BauhubTaskTool *)tool) setTaskImageName:[NSString stringWithFormat:@"task_c566e8"]];
+            [((BauhubTaskTool *)tool) setTaskImageName:[NSString stringWithFormat:@"task_fddd00"]];
         }
     }
 
@@ -3191,7 +3191,7 @@
         self.image = [self correctForRotation:rawImage];
         [self createImageStamp];
     } else {
-        UIImage *defaultImage = [UIImage imageNamed:@"task_c566e8"];
+        UIImage *defaultImage = [UIImage imageNamed:@"task_fddd00"];
         if (defaultImage) {
             self.image = [self correctForRotation:defaultImage];
             [self createImageStamp];
