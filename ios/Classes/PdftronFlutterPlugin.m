@@ -2705,7 +2705,7 @@
         
         if ([tool isKindOfClass:[BauhubTaskTool class]]) {
             NSString *colorCode = [toolMode substringFromIndex: [toolMode length] - 6];
-            [((BauhubTaskTool *)tool) setTaskImageName:[NSString stringWithFormat:@"%@%@", @"task_", colorCode]];
+            [((BauhubTaskTool *)tool) setTaskImageName:[NSString stringWithFormat:@"%@%@", @"task_", "FFEBFD"]];
         }
     }
 
