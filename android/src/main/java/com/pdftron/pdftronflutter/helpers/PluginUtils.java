@@ -2,11 +2,17 @@ package com.pdftron.pdftronflutter.helpers;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.graphics.Color;
 import android.net.Uri;
 import android.util.Base64;
 import android.util.Log;
+import android.util.SparseArray;
+import android.view.Gravity;
+import android.view.MenuItem;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentActivity;
 
 import com.pdftron.common.PDFNetException;
 import com.pdftron.fdf.FDFDoc;
@@ -22,10 +28,14 @@ import com.pdftron.pdf.config.PDFViewCtrlConfig;
 import com.pdftron.pdf.config.ToolConfig;
 import com.pdftron.pdf.config.ToolManagerBuilder;
 import com.pdftron.pdf.config.ViewerConfig;
+import com.pdftron.pdf.controls.PdfViewCtrlTabBaseFragment;
 import com.pdftron.pdf.controls.PdfViewCtrlTabFragment2;
+import com.pdftron.pdf.controls.PdfViewCtrlTabHostBaseFragment;
 import com.pdftron.pdf.controls.PdfViewCtrlTabHostFragment2;
 import com.pdftron.pdf.controls.ReflowControl;
 import com.pdftron.pdf.controls.ThumbnailsViewFragment;
+import com.pdftron.pdf.controls.UserCropSelectionDialogFragment;
+import com.pdftron.pdf.dialog.RotateDialogFragment;
 import com.pdftron.pdf.dialog.ViewModePickerDialogFragment;
 import com.pdftron.pdf.dialog.pdflayer.PdfLayerDialog;
 import com.pdftron.pdf.model.AnnotStyle;
@@ -38,10 +48,13 @@ import com.pdftron.pdf.tools.Tool;
 import com.pdftron.pdf.tools.ToolManager;
 import com.pdftron.pdf.tools.UndoRedoManager;
 import com.pdftron.pdf.tools.AnnotManager;
+import com.pdftron.pdf.utils.AnalyticsHandlerAdapter;
 import com.pdftron.pdf.utils.AnnotUtils;
 import com.pdftron.pdf.utils.BookmarkManager;
+import com.pdftron.pdf.utils.DialogGoToPage;
 import com.pdftron.pdf.utils.CommonToast;
 import com.pdftron.pdf.utils.PdfViewCtrlSettingsManager;
+import com.pdftron.pdf.utils.StampManager;
 import com.pdftron.pdf.utils.Utils;
 import com.pdftron.pdf.utils.ViewerUtils;
 import com.pdftron.pdf.widget.bottombar.builder.BottomBarBuilder;
@@ -66,6 +79,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
@@ -97,6 +111,13 @@ public class PluginUtils {
     public static final String KEY_EXPORT_FORMAT_BMP = "BMP";
     public static final String KEY_EXPORT_FORMAT_JPEG = "JPEG";
     public static final String KEY_EXPORT_FORMAT_PNG = "PNG";
+    public static final String KEY_ZOOM_LIMIT_MODE = "zoomLimitMode";
+    public static final String KEY_MAXIMUM = "maximum";
+    public static final String KEY_MINIMUM = "minimum";
+    public static final String KEY_ZOOM_LIMIT_MODE_NONE = "none";
+    public static final String KEY_ZOOM_LIMIT_MODE_ABSOLUTE = "absolute";
+    public static final String KEY_ZOOM_LIMIT_MODE_RELATIVE = "relative";
+    public static final String KEY_ANIMATED = "animated";
 
     public static final String KEY_REQUESTED_ORIENTATION = "requestedOrientation";
 
@@ -127,8 +148,10 @@ public class PluginUtils {
     public static final String KEY_CONFIG_PAGE_CHANGE_ON_TAP = "pageChangeOnTap";
     public static final String KEY_CONFIG_SHOW_SAVED_SIGNATURES = "showSavedSignatures";
     public static final String KEY_CONFIG_SIGNATURE_PHOTO_PICKER_ENABLED = "signaturePhotoPickerEnabled";
+    public static final String KEY_CONFIG_SIGNATURE_TYPING_ENABLED = "signatureTypingEnabled";
     public static final String KEY_CONFIG_USE_STYLUS_AS_PEN = "useStylusAsPen";
     public static final String KEY_CONFIG_SIGN_SIGNATURE_FIELD_WITH_STAMPS = "signSignatureFieldWithStamps";
+    public static final String KEY_CONFIG_SIGNATURE_COLORS = "signatureColors";
     public static final String KEY_CONFIG_SELECT_ANNOTATION_AFTER_CREATION = "selectAnnotationAfterCreation";
     public static final String KEY_CONFIG_PAGE_INDICATOR_ENABLED = "pageIndicatorEnabled";
     public static final String KEY_CONFIG_SHOW_QUICK_NAVIGATION_BUTTON = "showQuickNavigationButton";
@@ -143,6 +166,7 @@ public class PluginUtils {
     public static final String KEY_CONFIG_HIDE_TOOLBARS_ON_TAP = "hideToolbarsOnTap";
     public static final String KEY_CONFIG_HIDE_TOP_APP_NAV_BAR = "hideTopAppNavBar";
     public static final String KEY_CONFIG_HIDE_BOTTOM_TOOLBAR = "hideBottomToolbar";
+    public static final String KEY_CONFIG_HIDE_PRESET_BAR = "hidePresetBar";
     public static final String KEY_CONFIG_BOTTOM_TOOLBAR = "bottomToolbar";
     public static final String KEY_CONFIG_SHOW_LEADING_NAV_BUTTON = "showLeadingNavButton";
     public static final String KEY_CONFIG_REMEMBER_LAST_USED_TOOL = "rememberLastUsedTool";
@@ -172,11 +196,17 @@ public class PluginUtils {
     public static final String KEY_CONFIG_USER_NAME = "userName";
     public static final String KEY_CONFIG_ANNOTATION_MANAGER_UNDO_MODE = "annotationManagerUndoMode";
     public static final String KEY_CONFIG_ANNOTATION_MANAGER_EDIT_MODE = "annotationManagerEditMode";
+    public static final String KEY_CONFIG_ANNOTATION_TOOLBAR_GRAVITY = "annotationToolbarAlignment";
+    public static final String KEY_CONFIG_QUICK_BOOKMARK_CREATION = "quickBookmarkCreation";
+    public static final String KEY_CONFIG_FULL_SCREEN_MODE_ENABLED = "fullScreenModeEnabled";
 
     public static final String KEY_X1 = "x1";
     public static final String KEY_Y1 = "y1";
     public static final String KEY_X2 = "x2";
     public static final String KEY_Y2 = "y2";
+    public static final String KEY_X = "x";
+    public static final String KEY_Y = "y";
+    public static final String KEY_ZOOM = "zoom";
     public static final String KEY_WIDTH = "width";
     public static final String KEY_HEIGHT = "height";
     public static final String KEY_RECT = "rect";
@@ -214,6 +244,13 @@ public class PluginUtils {
 
     public static final String KEY_PATH = "path";
 
+    public static final String KEY_GRAVITY_START = "GravityStart";
+    public static final String KEY_GRAVITY_END = "GravityEnd";
+
+    public static final String KEY_SEARCH_STRING = "searchString";
+    public static final String KEY_MATCH_CASE = "matchCase";
+    public static final String KEY_MATCH_WHOLE_WORD = "matchWholeWord";
+
     public static final String EVENT_EXPORT_ANNOTATION_COMMAND = "export_annotation_command_event";
     public static final String EVENT_EXPORT_BOOKMARK = "export_bookmark_event";
     public static final String EVENT_DOCUMENT_LOADED = "document_loaded_event";
@@ -228,6 +265,8 @@ public class PluginUtils {
     public static final String EVENT_PAGE_CHANGED = "page_changed_event";
     public static final String EVENT_ZOOM_CHANGED = "zoom_changed_event";
     public static final String EVENT_PAGE_MOVED = "page_moved_event";
+    public static final String EVENT_ANNOTATION_TOOLBAR_ITEM_PRESSED = "annotation_toolbar_item_pressed_event";
+    public static final String EVENT_SCROLL_CHANGED = "scroll_changed_event";
 
     public static final String FUNCTION_GET_PLATFORM_VERSION = "getPlatformVersion";
     public static final String FUNCTION_GET_VERSION = "getVersion";
@@ -274,8 +313,30 @@ public class PluginUtils {
     public static final String FUNCTION_OPEN_BOOKMARK_LIST = "openBookmarkList";
     public static final String FUNCTION_OPEN_OUTLINE_LIST = "openOutlineList";
     public static final String FUNCTION_OPEN_LAYERS_LIST = "openLayersList";
+    public static final String FUNCTION_OPEN_THUMBNAILS_VIEW = "openThumbnailsView";
+    public static final String FUNCTION_OPEN_ROTATE_DIALOG = "openRotateDialog";
+    public static final String FUNCTION_OPEN_ADD_PAGES_VIEW = "openAddPagesView";
+    public static final String FUNCTION_OPEN_VIEW_SETTINGS = "openViewSettings";
+    public static final String FUNCTION_OPEN_CROP = "openCrop";
+    public static final String FUNCTION_OPEN_MANUAL_CROP = "openManualCrop";
+    public static final String FUNCTION_OPEN_SEARCH = "openSearch";
+    public static final String FUNCTION_OPEN_TAB_SWITCHER = "openTabSwitcher";
+    public static final String FUNCTION_OPEN_GO_TO_PAGE_VIEW = "openGoToPageView";
     public static final String FUNCTION_OPEN_NAVIGATION_LISTS = "openNavigationLists";
     public static final String FUNCTION_GET_CURRENT_PAGE = "getCurrentPage";
+    public static final String FUNCTION_GROUP_ANNOTATIONS = "groupAnnotations";
+    public static final String FUNCTION_UNGROUP_ANNOTATIONS = "ungroupAnnotations";
+    public static final String FUNCTION_START_SEARCH_MODE = "startSearchMode";
+    public static final String FUNCTION_EXIT_SEARCH_MODE = "exitSearchMode";
+    public static final String FUNCTION_ZOOM_WITH_CENTER = "zoomWithCenter";
+    public static final String FUNCTION_ZOOM_TO_RECT = "zoomToRect";
+    public static final String FUNCTION_GET_ZOOM = "getZoom";
+    public static final String FUNCTION_SET_ZOOM_LIMITS = "setZoomLimits";
+    public static final String FUNCTION_SMART_ZOOM = "smartZoom";
+    public static final String FUNCTION_GET_SAVED_SIGNATURES = "getSavedSignatures";
+    public static final String FUNCTION_GET_SAVED_SIGNATURE_FOLDER = "getSavedSignatureFolder";
+    public static final String FUNCTION_GET_SAVED_SIGNATURE_JPG_FOLDER = "getSavedSignatureJpgFolder";
+    public static final String FUNCTION_GET_VISIBLE_PAGES = "getVisiblePages";
 
     public static final String BUTTON_TOOLS = "toolsButton";
     public static final String BUTTON_SEARCH = "searchButton";
@@ -306,6 +367,7 @@ public class PluginUtils {
     public static final String BUTTON_REDO = "redo";
     public static final String BUTTON_EDIT_ANNOTATION_TOOLBAR = "editAnnotationToolButton";
     public static final String BUTTON_VIEW_LAYERS = "viewLayersButton";
+    public static final String BUTTON_SHOW_FILE_ATTACHMENT = "showFileAttachmentButton";
 
     public static final String TOOL_BUTTON_FREE_HAND = "freeHandToolButton";
     public static final String TOOL_BUTTON_HIGHLIGHT = "highlightToolButton";
@@ -464,8 +526,12 @@ public class PluginUtils {
     public static final String MENU_ID_STRING_SIGN_AND_SAVE = "signAndSave";
     public static final String MENU_ID_STRING_THICKNESS = "thickness";
     public static final String MENU_ID_STRING_TRANSLATE = "translate";
-    public static final String MENU_ID_STRING_TYPE = "type";
     public static final String MENU_ID_STRING_UNGROUP = "ungroup";
+
+    // RGB colors
+    public static final String COLOR_RED = "red";
+    public static final String COLOR_GREEN = "green";
+    public static final String COLOR_BLUE = "blue";
 
     // Toolbars
     public static final String TAG_VIEW_TOOLBAR = "PDFTron_View";
@@ -489,16 +555,17 @@ public class PluginUtils {
     public static final String VIEW_MODE_CROP = "viewModeCrop";
     public static final String VIEW_MODE_ROTATION = "viewModeRotation";
     public static final String VIEW_MODE_COLOR_MODE = "viewModeColorMode";
+    public static final String VIEW_MODE_VERTICAL_SCROLLING = "viewModeVerticalScrolling";
 
     // Default Eraser Type
     public static final String DEFAULT_ERASER_TYPE_ANNOTATION = "annotationEraser";
-    public static final String DEFAULT_ERASER_TYPE_HYBRID = "hybrideEraser";
+    public static final String DEFAULT_ERASER_TYPE_HYBRID = "hybridEraser";
     public static final String DEFAULT_ERASER_TYPE_INK = "inkEraser";
 
     // Reflow Orientation
     public static final String REFLOW_ORIENTATION_HORIZONTAL = "horizontal";
     public static final String REFLOW_ORIENTATION_VERTICAL = "vertical";
-    
+
     // Annotation Manager Edit Mode
     public static final String ANNOTATION_MANAGER_EDIT_MODE_OWN = "editModeOwn";
     public static final String ANNOTATION_MANAGER_EDIT_MODE_ALL = "editModeAll";
@@ -511,6 +578,9 @@ public class PluginUtils {
     public static boolean isBookmarkListVisible = true;
     public static boolean isOutlineListVisible = true;
     public static boolean isAnnotationListVisible = true;
+
+    public static final AtomicInteger toolIdGenerator = new AtomicInteger(1000);
+    public static final SparseArray<String> mToolIdMap = new SparseArray<>();
 
     private static AnnotManager.EditPermissionMode mAnnotationManagerEditMode = AnnotManager.EditPermissionMode.EDIT_OTHERS;
     private static PDFViewCtrl.AnnotationManagerMode mAnnotationManagerUndoMode = PDFViewCtrl.AnnotationManagerMode.ADMIN_UNDO_OTHERS;
@@ -731,7 +801,8 @@ public class PluginUtils {
         }
     }
 
-    public static ConfigInfo handleOpenDocument(@NonNull ViewerConfig.Builder builder, @NonNull ToolManagerBuilder toolManagerBuilder,
+    public static ConfigInfo handleOpenDocument(@NonNull ViewerConfig.Builder builder,
+            @NonNull ToolManagerBuilder toolManagerBuilder,
             @NonNull PDFViewCtrlConfig pdfViewCtrlConfig, @NonNull String document, @NonNull Context context,
             String configStr) {
 
@@ -885,6 +956,10 @@ public class PluginUtils {
                     boolean signaturePhotoPickerEnabled = configJson.getBoolean(KEY_CONFIG_SIGNATURE_PHOTO_PICKER_ENABLED);
                     toolManagerBuilder = toolManagerBuilder.setShowSignatureFromImage(signaturePhotoPickerEnabled);
                 }
+                if (!configJson.isNull(KEY_CONFIG_SIGNATURE_TYPING_ENABLED)) {
+                    boolean signatureTypingEnabled = configJson.getBoolean(KEY_CONFIG_SIGNATURE_TYPING_ENABLED);
+                    toolManagerBuilder = toolManagerBuilder.setShowTypedSignature(signatureTypingEnabled);
+                }
                 if (!configJson.isNull(KEY_CONFIG_USE_STYLUS_AS_PEN)) {
                     boolean useStylusAsPen = configJson.getBoolean(KEY_CONFIG_USE_STYLUS_AS_PEN);
                     configInfo.setUseStylusAsPen(useStylusAsPen);
@@ -892,6 +967,10 @@ public class PluginUtils {
                 if (!configJson.isNull(KEY_CONFIG_SIGN_SIGNATURE_FIELD_WITH_STAMPS)) {
                     boolean signSignatureFieldWithStamps = configJson.getBoolean(KEY_CONFIG_SIGN_SIGNATURE_FIELD_WITH_STAMPS);
                     configInfo.setSignSignatureFieldWithStamps(signSignatureFieldWithStamps);
+                }
+                if (!configJson.isNull(KEY_CONFIG_SIGNATURE_COLORS)) {
+                    JSONArray signatureColors = configJson.getJSONArray(KEY_CONFIG_SIGNATURE_COLORS);
+                    toolManagerBuilder = setSignatureColors(signatureColors, toolManagerBuilder);
                 }
                 if (!configJson.isNull(KEY_CONFIG_SELECT_ANNOTATION_AFTER_CREATION)) {
                     boolean selectAnnotationAfterCreation = configJson.getBoolean(KEY_CONFIG_SELECT_ANNOTATION_AFTER_CREATION);
@@ -919,7 +998,7 @@ public class PluginUtils {
                 }
                 if (!configJson.isNull(KEY_CONFIG_ANNOTATION_TOOLBARS)) {
                     JSONArray array = configJson.getJSONArray(KEY_CONFIG_ANNOTATION_TOOLBARS);
-                    setAnnotationBars(array, builder);
+                    setAnnotationBars(array, builder, context);
                 }
                 if (!configJson.isNull(KEY_CONFIG_HIDE_DEFAULT_ANNOTATION_TOOLBARS)) {
                     JSONArray array = configJson.getJSONArray(KEY_CONFIG_HIDE_DEFAULT_ANNOTATION_TOOLBARS);
@@ -957,6 +1036,10 @@ public class PluginUtils {
                 if (!configJson.isNull(KEY_CONFIG_HIDE_BOTTOM_TOOLBAR)) {
                     boolean hideBottomToolbar = configJson.getBoolean(KEY_CONFIG_HIDE_BOTTOM_TOOLBAR);
                     builder.showBottomToolbar(!hideBottomToolbar);
+                }
+                if (!configJson.isNull(KEY_CONFIG_HIDE_PRESET_BAR)) {
+                    boolean hidePresetBar = configJson.getBoolean(KEY_CONFIG_HIDE_PRESET_BAR);
+                    builder.hidePresetBar(hidePresetBar);
                 }
                 if (!configJson.isNull(KEY_CONFIG_BOTTOM_TOOLBAR)) {
                     JSONArray array = configJson.getJSONArray(KEY_CONFIG_BOTTOM_TOOLBAR);
@@ -1058,18 +1141,22 @@ public class PluginUtils {
                     builder.annotationsListFilterEnabled(annotationsListFilterEnabled);
                 }
                 if (!configJson.isNull(KEY_CONFIG_HIDE_VIEW_MODE_ITEMS)) {
-                   JSONArray array = configJson.getJSONArray(KEY_CONFIG_HIDE_VIEW_MODE_ITEMS);
-                   for (int i = 0; i < array.length(); i++) {
-                       if (VIEW_MODE_COLOR_MODE.equals(array.getString(i))) {
+                    JSONArray array = configJson.getJSONArray(KEY_CONFIG_HIDE_VIEW_MODE_ITEMS);
+                    for (int i = 0; i < array.length(); i++) {
+                        if (VIEW_MODE_COLOR_MODE.equals(array.getString(i))) {
                             viewModePickerItems.add(ViewModePickerDialogFragment.ViewModePickerItems.ITEM_ID_COLORMODE);
-                       }
-                       if (VIEW_MODE_CROP.equals(array.getString(i))) {
+                        }
+                        if (VIEW_MODE_CROP.equals(array.getString(i))) {
                             viewModePickerItems.add(ViewModePickerDialogFragment.ViewModePickerItems.ITEM_ID_USERCROP);
-                       }
-                       if (VIEW_MODE_ROTATION.equals(array.getString(i))) {
-                           viewModePickerItems.add(ViewModePickerDialogFragment.ViewModePickerItems.ITEM_ID_ROTATION);
-                       }
-                   }
+                        }
+                        if (VIEW_MODE_ROTATION.equals(array.getString(i))) {
+                            viewModePickerItems.add(ViewModePickerDialogFragment.ViewModePickerItems.ITEM_ID_ROTATION);
+                        }
+                        if (VIEW_MODE_VERTICAL_SCROLLING.equals(array.getString(i))) {
+                            viewModePickerItems
+                                    .add(ViewModePickerDialogFragment.ViewModePickerItems.ITEM_ID_CONTINUOUS);
+                        }
+                    }
                 }
                 if (!configJson.isNull(KEY_CONFIG_DEFAULT_ERASER_TYPE)) {
                     String eraserType = configJson.getString(KEY_CONFIG_DEFAULT_ERASER_TYPE);
@@ -1129,6 +1216,26 @@ public class PluginUtils {
                         mAnnotationManagerUndoMode = PDFViewCtrl.AnnotationManagerMode.ADMIN_UNDO_OWN;
                     }
                 }
+                if (!configJson.isNull(KEY_CONFIG_ANNOTATION_TOOLBAR_GRAVITY)) {
+                    String gravityStr = configJson.getString(KEY_CONFIG_ANNOTATION_TOOLBAR_GRAVITY);
+                    int gravity = Gravity.END;
+                    if (KEY_GRAVITY_START.equals(gravityStr)) {
+                        gravity = Gravity.START;
+                    }
+                    builder.toolbarItemGravity(gravity);
+                }
+                if (!configJson.isNull(KEY_CONFIG_QUICK_BOOKMARK_CREATION)) {
+                    Boolean quickBookmark = configJson.getBoolean(KEY_CONFIG_QUICK_BOOKMARK_CREATION);
+                    builder.quickBookmarkCreation(quickBookmark);
+                }
+                if (!configJson.isNull(KEY_CONFIG_FULL_SCREEN_MODE_ENABLED)) {
+                    boolean fullScreenMode = configJson.getBoolean(KEY_CONFIG_FULL_SCREEN_MODE_ENABLED);
+                    PdfViewCtrlSettingsManager.setFullScreenMode(context, fullScreenMode);
+                    builder.fullscreenModeEnabled(fullScreenMode);
+                } else {
+                    PdfViewCtrlSettingsManager.setFullScreenMode(context, false);
+                    builder.fullscreenModeEnabled(false);
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -1162,7 +1269,10 @@ public class PluginUtils {
         return configInfo;
     }
 
-    private static void setAnnotationBars(JSONArray array, ViewerConfig.Builder builder) throws JSONException {
+    private static void setAnnotationBars(JSONArray array, ViewerConfig.Builder builder, Context context) throws JSONException {
+        if (context == null) {
+            return;
+        }
         for (int i = 0; i < array.length(); i++) {
             Object annotationBar = array.get(i);
             if (annotationBar instanceof String) {
@@ -1196,15 +1306,40 @@ public class PluginUtils {
                             .setToolbarName(toolbarName)
                             .setIcon(convStringToToolbarDefaultIconRes(toolbarIcon));
                     for (int j = 0; j < toolbarItems.length(); j++) {
-                        String toolStr = toolbarItems.getString(j);
-                        ToolbarButtonType buttonType = convStringToToolbarType(toolStr);
-                        int buttonId = convStringToButtonId(toolStr);
-                        if (buttonType != null && buttonId != 0) {
-                            if (buttonType == ToolbarButtonType.UNDO ||
-                                    buttonType == ToolbarButtonType.REDO) {
-                                toolbarBuilder.addToolStickyButton(buttonType, buttonId);
-                            } else {
-                                toolbarBuilder.addToolButton(buttonType, buttonId);
+                        Object type = toolbarItems.get(j);
+                        if (type instanceof String) {
+                            String toolStr = toolbarItems.getString(j);
+                            ToolbarButtonType buttonType = convStringToToolbarType(toolStr);
+                            int buttonId = convStringToButtonId(toolStr);
+                            if (buttonType != null && buttonId != 0) {
+                                if (buttonType == ToolbarButtonType.UNDO ||
+                                        buttonType == ToolbarButtonType.REDO) {
+                                    toolbarBuilder.addToolStickyButton(buttonType, buttonId);
+                                } else {
+                                    toolbarBuilder.addToolButton(buttonType, buttonId);
+                                }
+                            }
+                        } else if (type instanceof JSONObject) {
+                            // custom buttons
+                            JSONObject item = toolbarItems.getJSONObject(j);
+                            String itemId = null, itemName = null, itemIcon = null;
+                            if (!item.isNull(TOOLBAR_KEY_ID)) {
+                                itemId = item.getString(TOOLBAR_KEY_ID);
+                            }
+                            if (!item.isNull(TOOLBAR_KEY_NAME)) {
+                                itemName = item.getString(TOOLBAR_KEY_NAME);
+                            }
+                            if (!item.isNull(TOOLBAR_KEY_ICON)) {
+                                itemIcon = item.getString(TOOLBAR_KEY_ICON);
+                            }
+
+                            if (!Utils.isNullOrEmpty(itemId) && itemName != null && !Utils.isNullOrEmpty(itemIcon)) {
+                                int res = Utils.getResourceDrawable(context, itemIcon);
+                                if (res != 0) {
+                                    int id = toolIdGenerator.getAndIncrement();
+                                    mToolIdMap.put(id, itemId);
+                                    toolbarBuilder.addCustomButton(itemName, res, id);
+                                }
                             }
                         }
                     }
@@ -1214,7 +1349,7 @@ public class PluginUtils {
         }
     }
 
-    private static void setBottomToolbar(JSONArray array, ViewerConfig.Builder builder) throws JSONException{
+    private static void setBottomToolbar(JSONArray array, ViewerConfig.Builder builder) throws JSONException {
         BottomBarBuilder customBottomBar = BottomBarBuilder.withTag("CustomBottomBar");
 
         for (int i = 0; i < array.length(); i++) {
@@ -1236,6 +1371,24 @@ public class PluginUtils {
         }
 
         builder.bottomBarBuilder(customBottomBar);
+    }
+
+    private static ToolManagerBuilder setSignatureColors(JSONArray array, ToolManagerBuilder toolManagerBuilder) throws JSONException {
+        int[] signatureColors = new int[array.length()];
+
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject color = array.getJSONObject(i);
+
+            if (color != null) {
+                int red = color.getInt(COLOR_RED);
+                int green = color.getInt(COLOR_GREEN);
+                int blue = color.getInt(COLOR_BLUE);
+
+                signatureColors[i] = Color.rgb(red, green, blue);
+            }
+        }
+
+        return toolManagerBuilder.setSignatureColors(signatureColors);
     }
 
     private static Uri getUri(Context context, String path, boolean isBase64, String base64FileExtension) {
@@ -1360,6 +1513,8 @@ public class PluginUtils {
                         .showReflowOption(false);
             } else if (BUTTON_VIEW_LAYERS.equals(item)) {
                 builder = builder.showViewLayersToolbarOption(false);
+            } else if (BUTTON_SHOW_FILE_ATTACHMENT.equals(item)) {
+                builder = builder.showFileAttachmentOption(false);
             }
         }
 
@@ -1717,8 +1872,6 @@ public class PluginUtils {
             menuStr = MENU_ID_STRING_THICKNESS;
         } else if (id == R.id.qm_translate) {
             menuStr = MENU_ID_STRING_TRANSLATE;
-        } else if (id == R.id.qm_type) {
-            menuStr = MENU_ID_STRING_TYPE;
         } else if (id == R.id.qm_ungroup) {
             menuStr = MENU_ID_STRING_UNGROUP;
         }
@@ -2274,6 +2427,51 @@ public class PluginUtils {
                 openOutlineList(result, component);
                 break;
             }
+            case FUNCTION_OPEN_THUMBNAILS_VIEW: {
+                checkFunctionPrecondition(component);
+                openThumbnailsView(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_ROTATE_DIALOG: {
+                checkFunctionPrecondition(component);
+                openRotateDialog(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_ADD_PAGES_VIEW: {
+                checkFunctionPrecondition(component);
+                openAddPagesView(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_VIEW_SETTINGS: {
+                checkFunctionPrecondition(component);
+                openViewSettings(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_CROP: {
+                checkFunctionPrecondition(component);
+                openCrop(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_MANUAL_CROP: {
+                checkFunctionPrecondition(component);
+                openManualCrop(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_SEARCH: {
+                checkFunctionPrecondition(component);
+                openSearch(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_TAB_SWITCHER: {
+                checkFunctionPrecondition(component);
+                openTabSwitcher(result, component);
+                break;
+            }
+            case FUNCTION_OPEN_GO_TO_PAGE_VIEW: {
+                checkFunctionPrecondition(component);
+                openGoToPageView(result, component);
+                break;
+            }
             case FUNCTION_OPEN_NAVIGATION_LISTS: {
                 checkFunctionPrecondition(component);
                 openNavigationLists(result, component);
@@ -2284,6 +2482,97 @@ public class PluginUtils {
                 getCurrentPage(result, component);
                 break;
             }
+            case FUNCTION_GET_SAVED_SIGNATURES: {
+                checkFunctionPrecondition(component);
+                getSavedSignatures(result, component);
+                break;
+            }
+            case FUNCTION_GET_SAVED_SIGNATURE_FOLDER: {
+                checkFunctionPrecondition(component);
+                getSavedSignatureFolder(result, component);
+                break;
+            }
+            case FUNCTION_GET_SAVED_SIGNATURE_JPG_FOLDER: {
+                checkFunctionPrecondition(component);
+                getSavedSignatureJpgFolder(result, component);
+                break;
+            }
+            case FUNCTION_GROUP_ANNOTATIONS: {
+                checkFunctionPrecondition(component);
+                try {
+                    groupAnnotations(call, result, component);
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                    result.error(Integer.toString(ex.hashCode()), "JSONException Error: " + ex, null);
+                } catch (PDFNetException ex) {
+                    ex.printStackTrace();
+                    result.error(Long.toString(ex.getErrorCode()), "PDFTronException Error: " + ex, null);
+                }
+                break;
+            }
+            case FUNCTION_UNGROUP_ANNOTATIONS: {
+                checkFunctionPrecondition(component);
+                try {
+                    ungroupAnnotations(call, result, component);
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                    result.error(Integer.toString(ex.hashCode()), "JSONException Error: " + ex, null);
+                } catch (PDFNetException ex) {
+                    ex.printStackTrace();
+                    result.error(Long.toString(ex.getErrorCode()), "PDFTronException Error: " + ex, null);
+                }
+                break;
+            }
+            case FUNCTION_START_SEARCH_MODE: {
+                checkFunctionPrecondition(component);
+                try {
+                    startSearchMode(call, result, component);
+                } catch (JSONException ex) {
+                    ex.printStackTrace();
+                    result.error(Integer.toString(ex.hashCode()), "JSONException Error: " + ex, null);
+                }
+                break;
+            }
+            case FUNCTION_EXIT_SEARCH_MODE: {
+                checkFunctionPrecondition(component);
+                exitSearchMode(result, component);
+                break;
+            }
+            case FUNCTION_ZOOM_WITH_CENTER: {
+                checkFunctionPrecondition(component);
+                zoomWithCenter(call, result, component);
+                break;
+            }
+            case FUNCTION_ZOOM_TO_RECT: {
+                checkFunctionPrecondition(component);
+                zoomToRect(call, result, component);
+                break;
+            }
+            case FUNCTION_GET_ZOOM: {
+                checkFunctionPrecondition(component);
+                getZoom(result, component);
+                break;
+            }
+            case FUNCTION_SET_ZOOM_LIMITS: {
+                checkFunctionPrecondition(component);
+                try {
+                    setZoomLimits(call, result, component);
+                } catch (PDFNetException ex) {
+                    ex.printStackTrace();
+                    result.error(Long.toString(ex.getErrorCode()), "PDFTronException Error: " + ex, null);
+                }
+                break;
+            }
+            case FUNCTION_SMART_ZOOM: {
+                checkFunctionPrecondition(component);
+                smartZoom(call, result, component);
+                break;
+            }
+            case FUNCTION_GET_VISIBLE_PAGES: {
+                checkFunctionPrecondition(component);
+                getVisiblePages(result, component);
+                break;
+            }
             default:
                 Log.e("PDFTronFlutter", "notImplemented: " + call.method);
                 result.notImplemented();
@@ -2292,6 +2581,154 @@ public class PluginUtils {
     }
 
     // Methods
+
+    private static void smartZoom(MethodCall call, MethodChannel.Result result, ViewerComponent component) {
+        int x = call.argument(KEY_X);
+        int y = call.argument(KEY_Y);
+        boolean animated = call.argument(KEY_ANIMATED);
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (null == pdfViewCtrl) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+        pdfViewCtrl.smartZoom(x, y, animated);
+        result.success(null);
+    }
+
+    private static void setZoomLimits(MethodCall call, MethodChannel.Result result, ViewerComponent component)
+            throws PDFNetException {
+        String mode = call.argument(KEY_ZOOM_LIMIT_MODE);
+        double minimum = call.argument(KEY_MINIMUM);
+        double maximum = call.argument(KEY_MAXIMUM);
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (null == pdfViewCtrl) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+        PDFViewCtrl.ZoomLimitMode limitMode = null;
+
+        switch (mode) {
+            case KEY_ZOOM_LIMIT_MODE_ABSOLUTE:
+                limitMode = PDFViewCtrl.ZoomLimitMode.ABSOLUTE;
+                break;
+            case KEY_ZOOM_LIMIT_MODE_RELATIVE:
+                limitMode = PDFViewCtrl.ZoomLimitMode.RELATIVE;
+                break;
+            case KEY_ZOOM_LIMIT_MODE_NONE:
+                limitMode = PDFViewCtrl.ZoomLimitMode.NONE;
+                break;
+        }
+        if (limitMode != null) {
+            try {
+                pdfViewCtrl.setZoomLimits(limitMode, minimum, maximum);
+                result.success(null);
+            } catch (PDFNetException ex) {
+                ex.printStackTrace();
+                result.error(Long.toString(ex.getErrorCode()), "PDFTronException Error: " + ex, null);
+            }
+        } else {
+            result.error("InvalidState", "Invalid zoom limit mode", null);
+        }
+    }
+
+    private static void ungroupAnnotations(MethodCall call, MethodChannel.Result result, ViewerComponent component) throws PDFNetException, JSONException {
+        String annotationList = call.argument(KEY_ANNOTATION_LIST);
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        PDFDoc pdfDoc = component.getPdfDoc();
+
+        if (null == pdfViewCtrl || null == pdfDoc) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        boolean shouldUnlock = false;
+        try {
+            pdfViewCtrl.docLock(true);
+            shouldUnlock = true;
+
+            if (null != annotationList) {
+                JSONArray annotationJsonArray = new JSONArray(annotationList);
+                ArrayList<Annot> validAnnotations = new ArrayList<>(annotationJsonArray.length());
+                for (int i = 0; i < annotationJsonArray.length(); i++) {
+                    JSONObject currAnnot = annotationJsonArray.getJSONObject(i);
+                    if (currAnnot != null) {
+                        String currAnnotId = currAnnot.getString(KEY_ANNOTATION_ID);
+                        int currAnnotPageNumber = currAnnot.getInt(KEY_PAGE_NUMBER);
+                        if (!Utils.isNullOrEmpty(currAnnotId)) {
+                            Annot annotation = ViewerUtils.getAnnotById(pdfViewCtrl, currAnnotId, currAnnotPageNumber);
+                            if (annotation != null && annotation.isValid()) {
+                                validAnnotations.add(annotation);
+                            }
+                        }
+                    }
+                }
+                AnnotUtils.ungroupAnnotations(pdfViewCtrl, validAnnotations);
+            }
+        } finally {
+            if (shouldUnlock) {
+                pdfViewCtrl.docUnlock();
+            }
+        }
+    }
+
+    private static void groupAnnotations(MethodCall call, MethodChannel.Result result, ViewerComponent component) throws PDFNetException, JSONException {
+        String annotation = call.argument(KEY_ANNOTATION);
+        String annotationList = call.argument(KEY_ANNOTATION_LIST);
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        PDFDoc pdfDoc = component.getPdfDoc();
+
+        if (null == pdfViewCtrl || null == pdfDoc) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        boolean shouldUnlock = false;
+        try {
+            pdfViewCtrl.docLock(true);
+            shouldUnlock = true;
+
+            if (null != annotationList && annotation != null) {
+
+                JSONObject annotationJson = new JSONObject(annotation);
+                String primaryAnnotationId = annotationJson.getString(KEY_ANNOTATION_ID);
+                int primaryAnnotPageNum = annotationJson.getInt(KEY_PAGE_NUMBER);
+                Annot primaryAnnotation = ViewerUtils.getAnnotById(pdfViewCtrl, primaryAnnotationId, primaryAnnotPageNum);
+
+                if (primaryAnnotation == null || !primaryAnnotation.isValid()) {
+                    result.error("InvalidState", "Thew primary annotation cannot be null", null);
+                    return;
+                }
+
+                JSONArray annotationJsonArray = new JSONArray(annotationList);
+                ArrayList<Annot> allAnnotations = new ArrayList<>(annotationJsonArray.length());
+                boolean containsPrimary = false;
+                for (int i = 0; i < annotationJsonArray.length(); i++) {
+                    JSONObject currAnnot = annotationJsonArray.getJSONObject(i);
+                    if (currAnnot != null) {
+                        String currAnnotId = currAnnot.getString(KEY_ANNOTATION_ID);
+                        int currAnnotPageNumber = currAnnot.getInt(KEY_PAGE_NUMBER);
+                        if (!Utils.isNullOrEmpty(currAnnotId)) {
+                            Annot validAnnotation = ViewerUtils.getAnnotById(pdfViewCtrl, currAnnotId, currAnnotPageNumber);
+                            if (validAnnotation != null && validAnnotation.isValid()) {
+                                allAnnotations.add(validAnnotation);
+                                if (!containsPrimary) {
+                                    containsPrimary = currAnnotId.equals(primaryAnnotationId);
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!containsPrimary && primaryAnnotation != null) {
+                    allAnnotations.add(primaryAnnotation);
+                }
+                AnnotUtils.createAnnotationGroup(pdfViewCtrl, primaryAnnotation, allAnnotations);
+            }
+        } finally {
+            if (shouldUnlock) {
+                pdfViewCtrl.docUnlock();
+            }
+        }
+    }
 
     private static void importAnnotations(String xfdf, MethodChannel.Result result, ViewerComponent component) throws PDFNetException {
         PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
@@ -2547,6 +2984,123 @@ public class PluginUtils {
         pdfLayerDialog.show();
     }
 
+    private static void openThumbnailsView(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrlTabHostFragment2 == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        pdfViewCtrlTabHostFragment2.onPageThumbnailOptionSelected(false, null);
+        result.success(null);
+    }
+
+    private static void openRotateDialog(MethodChannel.Result result, ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrl != null && pdfViewCtrlTabHostFragment2 != null) {
+            RotateDialogFragment.newInstance()
+                    .setPdfViewCtrl(pdfViewCtrl)
+                    .show(pdfViewCtrlTabHostFragment2.getChildFragmentManager(), "rotate_dialog");
+            result.success(null);
+            return;
+        }
+
+        result.error("InvalidState", "Activity not attached", null);
+    }
+
+    private static void openAddPagesView(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrlTabHostFragment2 == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        pdfViewCtrlTabHostFragment2.addNewPage();
+        result.success(null);
+    }
+
+    private static void openViewSettings(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrlTabHostFragment2 == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        pdfViewCtrlTabHostFragment2.onViewModeOptionSelected();
+        result.success(null);
+    }
+
+    private static void openCrop(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrlTabHostFragment2 == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        pdfViewCtrlTabHostFragment2.onViewModeSelected(
+                PdfViewCtrlSettingsManager.KEY_PREF_VIEWMODE_USERCROP_VALUE);
+        result.success(null);
+    }
+
+    private static void openManualCrop(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrlTabHostFragment2 == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        pdfViewCtrlTabHostFragment2.onUserCropMethodSelected(UserCropSelectionDialogFragment.MODE_MANUAL_CROP);
+        result.success(null);
+    }
+
+    private static void openSearch(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrlTabHostFragment2 == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        pdfViewCtrlTabHostFragment2.onSearchOptionSelected();
+        result.success(null);
+    }
+
+    private static void openTabSwitcher(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
+        if (pdfViewCtrlTabHostFragment2 == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        pdfViewCtrlTabHostFragment2.onOpenTabSwitcher();
+        result.success(null);
+    }
+
+    private static void openGoToPageView(MethodChannel.Result result, ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        final PdfViewCtrlTabFragment2 pdfViewCtrlTabFragment = component.getPdfViewCtrlTabFragment();
+        if (pdfViewCtrl == null || pdfViewCtrlTabFragment == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+
+        DialogGoToPage dlgGotoPage = new DialogGoToPage(pdfViewCtrl.getContext(), pdfViewCtrl, new DialogGoToPage.DialogGoToPageListener() {
+            @Override
+            public void onPageSet(int pageNum) {
+                pdfViewCtrlTabFragment.setCurrentPageHelper(pageNum, true);
+                if (pdfViewCtrlTabFragment.getReflowControl() != null) {
+                    try {
+                        pdfViewCtrlTabFragment.getReflowControl().setCurrentPage(pageNum);
+                    } catch (Exception e) {
+                        AnalyticsHandlerAdapter.getInstance().sendException(e);
+                    }
+                }
+            }
+        });
+        dlgGotoPage.show();
+        result.success(null);
+    }
+
     private static void openNavigationLists(MethodChannel.Result result, ViewerComponent component) {
         PdfViewCtrlTabHostFragment2 pdfViewCtrlTabHostFragment2 = component.getPdfViewCtrlTabHostFragment();
         if (pdfViewCtrlTabHostFragment2 == null) {
@@ -2567,7 +3121,61 @@ public class PluginUtils {
         result.success(pdfViewCtrl.getCurrentPage());
     }
 
-    private static void setFlagsForAnnotations(String annotationsWithFlags, MethodChannel.Result result, ViewerComponent component) throws PDFNetException, JSONException {
+    private static void getZoom(MethodChannel.Result result, ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (pdfViewCtrl == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+        double zoom = pdfViewCtrl.getZoom();
+        result.success(zoom);
+    }
+    
+    private static void getSavedSignatures(MethodChannel.Result result, @NonNull ViewerComponent component) {
+        List<String> signatures = new ArrayList<String>();
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        Context context = pdfViewCtrl.getContext();
+        if (context != null) {
+            File[] files = StampManager.getInstance().getSavedSignatures(context);
+            for (int i = 0; i < files.length; i++) {
+                signatures.add(files[i].getAbsolutePath());
+            }
+        }
+        result.success(signatures);
+    }
+
+    private static void getSavedSignatureFolder(MethodChannel.Result result, @NonNull ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (pdfViewCtrl == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+        String filePath = "";
+        Context context = pdfViewCtrl.getContext();
+        if (context != null) {
+            File file = StampManager.getInstance().getSavedSignatureFolder(context);
+            filePath = file.getAbsolutePath();
+        }
+        result.success(filePath);
+    }
+
+    private static void getSavedSignatureJpgFolder(MethodChannel.Result result, @NonNull ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (pdfViewCtrl == null) {
+            result.error("InvalidState", "Activity not attached", null);
+            return;
+        }
+        String filePath = "";
+        Context context = pdfViewCtrl.getContext();
+        if (context != null) {
+            File file = StampManager.getInstance().getSavedSignatureJpgFolder(context);
+            filePath = file.getAbsolutePath();
+        }
+        result.success(filePath);
+    }
+
+    private static void setFlagsForAnnotations(String annotationsWithFlags, MethodChannel.Result result,
+            ViewerComponent component) throws PDFNetException, JSONException {
         PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
         PDFDoc pdfDoc = component.getPdfDoc();
         ToolManager toolManager = component.getToolManager();
@@ -3215,7 +3823,7 @@ public class PluginUtils {
             }
         }
     }
-    
+
     private static void gotoPreviousPage(MethodChannel.Result result, ViewerComponent component) {
         PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
         if (pdfViewCtrl == null) {
@@ -3259,7 +3867,7 @@ public class PluginUtils {
     private static void addBookmark(String title, Integer pageNumber, MethodChannel.Result result, ViewerComponent component) {
         PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
         PDFDoc pdfDoc = component.getPdfDoc();
-        if (pdfViewCtrl == null || pdfDoc == null ) {
+        if (pdfViewCtrl == null || pdfDoc == null) {
             result.error("InvalidState", "PDFViewCtrl not found", null);
             return;
         }
@@ -3281,6 +3889,79 @@ public class PluginUtils {
                 pdfViewCtrl.docUnlock();
             }
         }
+    }
+
+    public static void startSearchMode(MethodCall call, MethodChannel.Result result, ViewerComponent component) throws JSONException {
+        PdfViewCtrlTabFragment2 pdfViewCtrlTabFragment = component.getPdfViewCtrlTabFragment();
+        String searchString = call.argument(KEY_SEARCH_STRING);
+        boolean matchCase = call.argument(KEY_MATCH_CASE);
+        boolean matchWholeWord = call.argument(KEY_MATCH_WHOLE_WORD);
+        if (pdfViewCtrlTabFragment != null) {
+            pdfViewCtrlTabFragment.setSearchMode(true);
+            pdfViewCtrlTabFragment.setSearchQuery(searchString);
+            pdfViewCtrlTabFragment.setSearchMatchCase(matchCase);
+            pdfViewCtrlTabFragment.setSearchWholeWord(matchWholeWord);
+            pdfViewCtrlTabFragment.queryTextSubmit(searchString);
+            result.success(null);
+        } else {
+            result.error("InvalidState", "Activity not attached", null);
+        }
+    }
+
+    public static void exitSearchMode(MethodChannel.Result result, ViewerComponent component) {
+        PdfViewCtrlTabFragment2 pdfViewCtrlTabFragment = component.getPdfViewCtrlTabFragment();
+        if (pdfViewCtrlTabFragment != null) {
+            pdfViewCtrlTabFragment.setSearchMode(false);
+            pdfViewCtrlTabFragment.cancelFindText();
+            pdfViewCtrlTabFragment.exitSearchMode();
+        } else {
+            result.error("InvalidState", "Activity not attached", null);
+        }
+    }
+
+    private static void zoomWithCenter(MethodCall call, MethodChannel.Result result, ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (pdfViewCtrl == null) {
+            result.error("InvalidState", "PDFViewCtrl not found", null);
+            return;
+        }
+        double zoom = call.argument(KEY_ZOOM);
+        int x = call.argument(KEY_X);
+        int y = call.argument(KEY_Y);
+        pdfViewCtrl.setZoom(x, y, zoom);
+        result.success(null);
+    }
+
+    private static void zoomToRect(MethodCall call, MethodChannel.Result result, ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (pdfViewCtrl == null) {
+            result.error("InvalidState", "PDFViewCtrl not found", null);
+            return;
+        }
+        try {
+            int pageNumber = call.argument(KEY_PAGE_NUMBER);
+            double x1 = call.argument(KEY_X1);
+            double y1 = call.argument(KEY_Y1);
+            double x2 = call.argument(KEY_X2);
+            double y2 = call.argument(KEY_Y2);
+            com.pdftron.pdf.Rect rect = new com.pdftron.pdf.Rect(x1, y1, x2, y2);
+            pdfViewCtrl.showRect(pageNumber, rect);
+            result.success(null);
+        } catch (PDFNetException ex) {
+            ex.printStackTrace();
+            result.error(Long.toString(ex.getErrorCode()), "PDFTronException Error: " + ex, null);
+        }
+
+    }
+
+    private static void getVisiblePages(MethodChannel.Result result, ViewerComponent component) {
+        PDFViewCtrl pdfViewCtrl = component.getPdfViewCtrl();
+        if (pdfViewCtrl == null) {
+            result.error("InvalidState", "PDFViewCtrl not found", null);
+            return;
+        }
+        int[] visiblePages = pdfViewCtrl.getVisiblePages();
+        result.success(visiblePages);
     }
 
     // Events
@@ -3331,8 +4012,7 @@ public class PluginUtils {
                                 eventSink.success(xfdfCommand);
                             }
                         }
-                    }
-            );
+                    });
         }
     }
 
@@ -3389,6 +4069,16 @@ public class PluginUtils {
         }
     }
 
+    public static void handleAnnotationCustomToolbarItemPressed(ViewerComponent component, MenuItem item) {
+        EventChannel.EventSink annotationCustomToolbarItemPressedEventSink = component.getAnnotationToolbarItemPressedEventEmitter();
+        int itemId = item.getItemId();
+        String itemKey = mToolIdMap.get(itemId);
+        if (itemKey != null && annotationCustomToolbarItemPressedEventSink != null) {
+            // this is a custom button
+            annotationCustomToolbarItemPressedEventSink.success(itemId);
+        }
+    }
+
     private static void addListeners(ViewerComponent component) {
         ToolManager toolManager = component.getToolManager();
 
@@ -3441,7 +4131,7 @@ public class PluginUtils {
     }
 
     public static void emitExportAnnotationCommandEvent(String action, Map<Annot, Integer> map, ViewerComponent component) {
-        if (component.getToolManager() != null && component.getToolManager().getAnnotManager() != null ) {
+        if (component.getToolManager() != null && component.getToolManager().getAnnotManager() != null) {
             return;
         } else {
             ArrayList<Annot> annots = new ArrayList<>(map.keySet());
